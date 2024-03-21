@@ -6,7 +6,7 @@ import env from 'src/config/env'
 // Initialize Firebase Admin SDK
 admin.initializeApp({
   // Add your Firebase admin credentials here
-  credential: admin.credential.cert(JSON.parse(env.FIREBASE_ADMIN_KEY!)),
+  credential: admin.credential.cert(JSON.parse(env.GCLOUD_ADMIN_KEY!)),
 })
 
 // Middleware function to validate Firebase auth header

@@ -8,7 +8,7 @@ export default load({
     type: String,
     optional: false,
   },
-  FIREBASE_ADMIN_KEY: {
+  GCLOUD_ADMIN_KEY: {
     type: String,
     optional: false,
   },
