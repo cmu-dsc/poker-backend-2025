@@ -6,7 +6,7 @@ export enum ApiErrorCodes {
     CREATED = 201,
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
-    FROBIDDEN = 403,
+    FORBIDDEN = 403,
     NOT_FOUND = 404,
     BUSINESS_LOGIC_ERROR = 422,
     I_AM_A_TEAPOT = 418,

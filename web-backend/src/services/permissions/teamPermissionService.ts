@@ -11,7 +11,7 @@ export const checkUserIdPermissionsForTeamGithubName = async (
     return true
   } else {
     throw new ApiError(
-      ApiErrorCodes.FROBIDDEN,
+      ApiErrorCodes.FORBIDDEN,
       'User does not have permission to access this team',
     )
   }

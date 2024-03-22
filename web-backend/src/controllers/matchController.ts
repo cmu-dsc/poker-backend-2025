@@ -1,9 +1,15 @@
-import { MatchDto } from '@api/generated'
+import { MatchDto, UserDto } from '@api/generated'
 import { Request, Response } from 'express'
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier'
-import { getMatchesByTeamId } from 'src/services/matchService'
+import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
+import {
+  getBotLog,
+  getEngineLog,
+  getMatchesByTeamId,
+} from 'src/services/matchService'
 import { checkUserIdPermissionForMatch } from 'src/services/permissions/matchPermissionService'
 import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
+import { getUserById } from 'src/services/userService'
 import {
   validateLimit,
   validateMatchId,
@@ -60,7 +66,9 @@ export const getMatchByMatchIdLogsEngine = async (
     matchId,
   )
 
-  res.status(501).json(undefined)
+  const logs: string = await getEngineLog(matchId)
+
+  res.status(200).send(logs)
 }
 
 /**
@@ -79,5 +87,16 @@ export const getMatchByMatchIdLogsBot = async (
     req.params.matchId,
   )
 
-  res.status(501).json(undefined)
+  const user: UserDto = await getUserById(
+    ((req as any).decodedToken as DecodedIdToken).uid,
+  )
+  if (!user.teamId) {
+    throw new ApiError(
+      ApiErrorCodes.FORBIDDEN,
+      'User does not have permission to access this match',
+    )
+  }
+  const logs: string = await getBotLog(matchId, user.teamId)
+
+  res.status(200).send(logs)
 }
