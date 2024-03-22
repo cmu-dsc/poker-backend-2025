@@ -1,5 +1,9 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
+import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier'
+import { checkUserIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
+import { createTeam } from 'src/services/teamService'
+import { validateTeam } from 'src/services/validators/teamValidatorService'
 
 /**
  * Create a new team
@@ -10,7 +14,16 @@ export const postTeam = async (
   req: Request<any, any, TeamDto>,
   res: Response<TeamDto>,
 ) => {
-  res.status(501).json(undefined)
+  const team: TeamDto = validateTeam(req.body)
+
+  await checkUserIdPartOfTeam(
+    ((req as any).decodedToken as DecodedIdToken).uid,
+    team,
+  )
+
+  const createdTeam: TeamDto = await createTeam(team)
+
+  res.status(201).json(createdTeam)
 }
 
 /**
