@@ -3,16 +3,10 @@ import { MatchDto } from '@api/generated'
 export const BUCKET_NAME = 'poker-ai-blobs'
 export const MATCH_PREFIX = 'match_'
 export const ENGINE_LOG = 'engine_log.csv'
-export const BOT_LOG = 'bot_log.txt'
+export const BOT_LOG = 'debug_log.txt'
 
 const getMatchId = (match: MatchDto): string => {
-  return (
-    match.team1Id +
-    '-' +
-    match.team2Id +
-    '-' +
-    Math.floor(new Date(match.timestamp).getTime())
-  )
+  return (match.matchId)
 }
 
 /**
