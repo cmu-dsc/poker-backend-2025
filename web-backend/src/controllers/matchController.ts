@@ -28,21 +28,11 @@ export const getMatchTeamByGithubUsername = async (
   res: Response<MatchDto[]>,
 ) => {
   const githubName: string = validateTeamName(req.params.githubUsername)
-  const limit: number = validateLimit(req.query.limit)
-  const offset: number = validateOffset(req.query.offset)
-  const sortBy: string = validateSortBy(req.query.sortBy)
-  const order: 'asc' | 'desc' = validateOrder(req.query.order)
 
   await checkUserIdPermissionsForTeamGithubName(req.andrewId!, githubName)
 
-  const matches: MatchDto[] = await getMatchesByTeamId(
-    githubName,
-    sortBy,
-    limit,
-    offset,
-    order,
-  )
-
+  const matches: MatchDto[] = await getMatchesByTeamId(githubName)
+  
   res.status(200).json(matches)
 }
 

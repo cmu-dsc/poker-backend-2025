@@ -183,34 +183,6 @@ paths:
           schema:
             type: string
           description: The github username of the team
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-          description: The number of matches to return
-        - in: query
-          name: offset
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-          description: The number of matches to skip
-        - in: query
-          name: sort
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: desc
-          description: The order of the matches
-        - in: query
-          name: sortBy
-          schema:
-            type: string
-            enum: [timestamp]
-            default: timestamp
       responses:
         "200":
           description: OK
@@ -346,7 +318,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT    # optional, arbitrary value for documentation purposes
-      
+
 security:
   - bearerAuth: []
 
