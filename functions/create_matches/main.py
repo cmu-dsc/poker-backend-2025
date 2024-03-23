@@ -2,13 +2,11 @@ import time
 import functions_framework
 import random
 from google.cloud import bigquery
-from kubernetes import client
+from kubernetes import client, config
 from google.auth import compute_engine
 from google.auth.transport.requests import Request
 from concurrent.futures import ThreadPoolExecutor
 import uuid
-
-# TODO: remove secrets lol
 
 
 @functions_framework.http
@@ -116,6 +114,7 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
         namespace="default", body=game_engine_deployment
     )
 
+    time.sleep(60)
     # Wait for the game engine to finish running
     while True:
         game_engine_status = apps_v1.read_namespaced_deployment_status(
@@ -236,10 +235,10 @@ def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
                                     name="DATASET_ID",
                                     value="pokerai-417521.poker_dataset",
                                 ),
-                                client.V1EnvVar(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/var/secrets/google/service-account-key.json",
-                                ),
+                                # client.V1EnvVar(
+                                #     name="GOOGLE_APPLICATION_CREDENTIALS",
+                                #     value="/var/secrets/google/service-account-key.json",
+                                # ),
                             ],
                             volume_mounts=[
                                 client.V1VolumeMount(
@@ -294,8 +293,8 @@ def update_mmr(team1, team2, winner, bigquery_client):
 
     # Calculate the updated MMR using the Elo rating formula
     k_factor = 32  # Adjust the K-factor as needed
-    team1_updated_mmr = team1_mmr + k_factor * (team1_actual - team1_expected)
-    team2_updated_mmr = team2_mmr + k_factor * (team2_actual - team2_expected)
+    team1_updated_mmr = int(team1_mmr + k_factor * (team1_actual - team1_expected))
+    team2_updated_mmr = int(team2_mmr + k_factor * (team2_actual - team2_expected))
 
     # Update the MMR in the BigQuery table
     update_query = f"""
