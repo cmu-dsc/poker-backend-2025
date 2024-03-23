@@ -11,7 +11,7 @@ import {
 } from 'src/config/bucket'
 
 const GET_BY_MATCH_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE matchId = @matchId LIMIT 1`
-const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1 = @teamId OR team2 = @teamId ORDER BY @sortby @order LIMIT @limit OFFSET @offset`
+const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY @sortBy @order OFFSET @offset LIMIT @limit`
 
 /**
  * Retrieve a match from the database by matchId
@@ -27,7 +27,7 @@ export const getMatchById = async (matchId: string): Promise<MatchDto> => {
 
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  const matchRow = queryResult[0]
+  const matchRow = queryResult[0][0]
   if (!matchRow) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Match not found')
   }
@@ -56,9 +56,10 @@ export const getMatchesByTeamId = async (
     params: { teamId, limit, offset, sortBy, order },
   }
 
+  console.log(query)
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  return queryResult.map(convertRowToMatchDto)
+  return queryResult[0].map(convertRowToMatchDto)
 }
 
 /**

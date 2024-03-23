@@ -27,7 +27,7 @@ export const getMatchTeamByGithubUsername = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<MatchDto[]>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubName)
+  const githubName: string = validateTeamName(req.params.githubUsername)
   const limit: number = validateLimit(req.query.limit)
   const offset: number = validateOffset(req.query.offset)
   const sortBy: string = validateSortBy(req.query.sortBy)

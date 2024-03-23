@@ -57,7 +57,7 @@ export const validateMatchId = (matchId: string): string => {
 export const validateLimit = (limit: number): number => {
   try {
     if (limit) {
-      return limitValidator.parse(limit)
+      return limitValidator.parse(Number(limit))
     } else {
       return 10
     }
@@ -75,7 +75,7 @@ export const validateLimit = (limit: number): number => {
 export const validateOffset = (offset: number): number => {
   try {
     if (offset) {
-      return offsetValidator.parse(offset)
+      return offsetValidator.parse(Number(offset))
     } else {
       return 0
     }

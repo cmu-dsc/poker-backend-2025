@@ -25,7 +25,7 @@ export const getUserByAndrewId = async (andrewId: string, force = false): Promis
 
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  const userRow = queryResult[0]
+  const userRow = queryResult[0][0]
   if (!userRow && !force) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'User not found')
   } if (!userRow && force) {
@@ -54,7 +54,7 @@ export const getUsersByTeamId = async (teamId: string): Promise<UserDto[]> => {
 
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  return queryResult.map(convertRowToUserDto)
+  return queryResult[0].map(convertRowToUserDto)
 }
 
 /**

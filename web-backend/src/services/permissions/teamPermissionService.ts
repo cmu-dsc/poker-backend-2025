@@ -22,17 +22,11 @@ export const checkAndrewIdPartOfTeam = async (
   team: TeamDto,
 ): Promise<boolean> => {
   const user: UserDto = await getUserByAndrewId(andrewId)
-  if (user.teamId) {
-    throw new ApiError(
-      ApiErrorCodes.BUSINESS_LOGIC_ERROR,
-      'User is already part of a team',
-    )
-  }
   if (user.andrewId && team.members.includes(user.andrewId)) {
     return true
   } else {
     throw new ApiError(
-      ApiErrorCodes.BUSINESS_LOGIC_ERROR,
+      ApiErrorCodes.FORBIDDEN,
       'User has to be part of the team to perform this action',
     )
   }

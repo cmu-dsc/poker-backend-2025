@@ -39,7 +39,7 @@ export const getTeamByGithubUsername = async (
   req: Request<any, any, any, any>,
   res: Response<TeamDto>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubName)
+  const githubName: string = validateTeamName(req.params.githubUsername)
 
   const team: TeamDto = await getTeamById(githubName)
 
@@ -55,7 +55,7 @@ export const putTeamByGithubUsername = async (
   req: Request<any, any, TeamDto> & { andrewId?: string },
   res: Response<TeamDto>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubName)
+  const githubName: string = validateTeamName(req.params.githubUsername)
   const team: TeamDto = validateTeam(req.body)
 
   team.githubUsername = githubName
@@ -78,7 +78,7 @@ export const deleteTeamByGithubUsername = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<any>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubName)
+  const githubName: string = validateTeamName(req.params.githubUsername)
 
   const team: TeamDto = await getTeamById(githubName)
   await checkAndrewIdPartOfTeam(req.andrewId!, team)

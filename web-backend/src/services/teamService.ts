@@ -8,7 +8,7 @@ import { updateUserTeamId } from './userService'
 
 const GET_BY_TEAM_ID_QUERY = `SELECT * FROM \`${DATASET_ID}.${TEAM_TABLE}\` WHERE githubUsername = @githubUsername LIMIT 1`
 const CREATE_TEAM_QUERY = `INSERT INTO \`${DATASET_ID}.${TEAM_TABLE}\` (githubUsername, elo) VALUES (@githubUsername, 100)`
-const SET_TEAM_TO_NULL_FOR_GITHUB_USERNAME = `UPDATE \`${DATASET_ID}.${USER_TABLE}\` SET githubUsername = NULL WHERE githubUsername = @githubUsername`
+const SET_TEAM_TO_NULL_FOR_GITHUB_USERNAME = `UPDATE \`${DATASET_ID}.${USER_TABLE}\` SET teamId = NULL WHERE teamId = @githubUsername`
 const DELETE_TEAM_QUERY = `DELETE FROM \`${DATASET_ID}.${TEAM_TABLE}\` WHERE githubUsername = @githubUsername`
 
 /**
@@ -26,12 +26,27 @@ export const getTeamById = async (teamId: string): Promise<TeamDto> => {
 
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  const teamRow = queryResult[0]
+  const teamRow = queryResult[0][0]
   if (!teamRow) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Team not found')
   }
   return await convertRowToTeamDto(teamRow)
 }
+
+/**
+ * Remove all users from a team
+ * @param {string} teamId the id of the team 
+ * @returns {Promise<void>} 
+ */
+const nullAllUsersTeamId = async (teamId: string): Promise<void> => {
+  const query: Query = {
+    query: SET_TEAM_TO_NULL_FOR_GITHUB_USERNAME,
+    location: 'US',
+    params: { githubUsername: teamId },
+  }
+  await bigqueryClient.query(query)
+}
+
 
 /**
  * Update a team in the database by teamId
@@ -50,6 +65,11 @@ export const updateTeamByGithubUsername = async (
       'Cannot change the github username of a team',
     )
   }
+
+  // remove all users
+  await nullAllUsersTeamId(githubUsername)
+
+  // and add all those that are in the request (hacky)
   await Promise.all(
     team.members
       .map(async member => {
@@ -76,7 +96,7 @@ export const createTeam = async (team: TeamDto): Promise<TeamDto> => {
     
       const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(existingTeam)
     
-      const teamRow = queryResult[0]
+      const teamRow = queryResult[0][0]
       if (teamRow) {
         throw new ApiError(ApiErrorCodes.BUSINESS_LOGIC_ERROR, 'Team already exists')
       }

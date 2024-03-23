@@ -8,11 +8,14 @@ import { getUsersByTeamId } from '../userService'
  */
 export const convertRowToTeamDto = async (row: any): Promise<TeamDto> => {
   const members: string[] = (await getUsersByTeamId(row.githubUsername))
+    .map(user => {
+        console.log(user)
+      return user})
     .map(user => user.andrewId)
     .filter(andrewId => andrewId) as string[]
   return {
     githubUsername: row.githubUsername,
     elo: row.elo,
-    members: row.members,
+    members: members,
   }
 }
