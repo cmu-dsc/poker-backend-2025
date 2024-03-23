@@ -23,7 +23,7 @@ export class MatchService {
         limit: number = 10,
         offset?: number,
         sort: 'asc' | 'desc' = 'desc',
-        sortBy: 'timestamp' | 'win' | 'loose' = 'timestamp',
+        sortBy: 'timestamp' = 'timestamp',
     ): CancelablePromise<Array<MatchDto>> {
         return __request(OpenAPI, {
             method: 'GET',

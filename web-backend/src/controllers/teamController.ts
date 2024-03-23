@@ -1,9 +1,16 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
-import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier'
-import { checkUserIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
-import { createTeam } from 'src/services/teamService'
-import { validateTeam } from 'src/services/validators/teamValidatorService'
+import { checkAndrewIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
+import {
+  createTeam,
+  deleteTeam,
+  getTeamById,
+  updateTeamByGithubUsername,
+} from 'src/services/teamService'
+import {
+  validateTeam,
+  validateTeamName,
+} from 'src/services/validators/teamValidatorService'
 
 /**
  * Create a new team
@@ -11,15 +18,12 @@ import { validateTeam } from 'src/services/validators/teamValidatorService'
  * @param {Response<TeamDto>} res the response containing the created team
  */
 export const postTeam = async (
-  req: Request<any, any, TeamDto>,
+  req: Request<any, any, TeamDto> & { andrewId: string },
   res: Response<TeamDto>,
 ) => {
   const team: TeamDto = validateTeam(req.body)
 
-  await checkUserIdPartOfTeam(
-    ((req as any).decodedToken as DecodedIdToken).uid,
-    team,
-  )
+  await checkAndrewIdPartOfTeam(req.andrewId, team)
 
   const createdTeam: TeamDto = await createTeam(team)
 
@@ -35,7 +39,11 @@ export const getTeamByGithubUsername = async (
   req: Request<any, any, any, any>,
   res: Response<TeamDto>,
 ) => {
-  res.status(501).json(undefined)
+  const githubName: string = validateTeamName(req.params.githubName)
+
+  const team: TeamDto = await getTeamById(githubName)
+
+  res.status(200).json(team)
 }
 
 /**
@@ -44,10 +52,21 @@ export const getTeamByGithubUsername = async (
  * @param {Response<TeamDto>} res the response containing the updated team
  */
 export const putTeamByGithubUsername = async (
-  req: Request<any, any, TeamDto>,
+  req: Request<any, any, TeamDto> & { andrewId: string },
   res: Response<TeamDto>,
 ) => {
-  res.status(501).json(undefined)
+  const githubName: string = validateTeamName(req.params.githubName)
+  const team: TeamDto = validateTeam(req.body)
+
+  team.githubUsername = githubName
+  await checkAndrewIdPartOfTeam(req.andrewId, team)
+
+  const updatedTeam: TeamDto = await updateTeamByGithubUsername(
+    githubName,
+    team,
+  )
+
+  res.status(200).json(updatedTeam)
 }
 
 /**
@@ -56,8 +75,15 @@ export const putTeamByGithubUsername = async (
  * @param {Response<any>} res the response
  */
 export const deleteTeamByGithubUsername = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId: string },
   res: Response<any>,
 ) => {
-  res.status(501).json(undefined)
+  const githubName: string = validateTeamName(req.params.githubName)
+
+  const team: TeamDto = await getTeamById(githubName)
+  await checkAndrewIdPartOfTeam(req.andrewId, team)
+
+  await deleteTeam(githubName)
+
+  res.status(204).send()
 }

@@ -1,13 +1,13 @@
 import { MatchDto, UserDto } from '@api/generated'
-import { getUserById } from '../userService'
+import { getUserByAndrewId } from '../userService'
 import { getMatchById } from '../matchService'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 
-export const checkUserIdPermissionForMatch = async (
-  userId: string,
+export const checkAndrewIdPermissionsForMatch = async (
+  andrewId: string,
   matchId: string,
 ): Promise<boolean> => {
-  const user: UserDto = await getUserById(userId)
+  const user: UserDto = await getUserByAndrewId(andrewId)
   const match: MatchDto = await getMatchById(matchId)
 
   if (user.teamId === match.team1Id || user.teamId === match.team2Id) {

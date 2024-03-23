@@ -1,6 +1,6 @@
 import { TeamDto } from '@api/generated'
 import { Query, SimpleQueryRowsResponse } from '@google-cloud/bigquery'
-import { DATASET_ID, TEAM_TABLE } from 'src/config/db'
+import { DATASET_ID, TEAM_TABLE, USER_TABLE } from 'src/config/db'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { bigqueryClient } from 'src/server'
 import { convertRowToTeamDto } from './converters/teamConverterService'
@@ -8,7 +8,8 @@ import { updateUserTeamId } from './userService'
 
 const GET_BY_TEAM_ID_QUERY = `SELECT * FROM \`${DATASET_ID}.${TEAM_TABLE}\` WHERE githubUsername = @githubUsername LIMIT 1`
 const CREATE_TEAM_QUERY = `INSERT INTO \`${DATASET_ID}.${TEAM_TABLE}\` (githubUsername, elo) VALUES (@githubUsername, 100)`
-// TODO: define starting elo in a constant
+const SET_TEAM_TO_NULL_FOR_GITHUB_USERNAME = `UPDATE \`${DATASET_ID}.${USER_TABLE}\` SET githubUsername = NULL WHERE githubUsername = @githubUsername`
+const DELETE_TEAM_QUERY = `DELETE FROM \`${DATASET_ID}.${TEAM_TABLE}\` WHERE githubUsername = @githubUsername`
 
 /**
  * Get a team from the database by teamId
@@ -97,4 +98,22 @@ export const createTeam = async (team: TeamDto): Promise<TeamDto> => {
     )
     
     return getTeamById(team.githubUsername)
+}
+
+export const deleteTeam = async (githubUsername: string): Promise<void> => {
+    const team: TeamDto = await getTeamById(githubUsername)
+    
+    const queryUpdateUsers: Query = {
+        query: SET_TEAM_TO_NULL_FOR_GITHUB_USERNAME,
+        location: 'US',
+        params: { githubUsername },
+    }
+    await bigqueryClient.query(queryUpdateUsers)
+
+    const query: Query = {
+        query: DELETE_TEAM_QUERY,
+        location: 'US',
+        params: { githubUsername },
+    }
+    await bigqueryClient.query(query)
 }

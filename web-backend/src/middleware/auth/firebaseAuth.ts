@@ -11,7 +11,7 @@ admin.initializeApp({
 
 // Middleware function to validate Firebase auth header
 export const firebaseAuthMiddleware = async (
-  req: Request & { decodedToken?: admin.auth.DecodedIdToken }, // Add 'decodedToken' property to Request type
+  req: Request & { decodedToken?: admin.auth.DecodedIdToken, andrewId: string }, // Add 'decodedToken' property to Request type
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -47,6 +47,9 @@ export const firebaseAuthMiddleware = async (
     if (!email || !email.endsWith('cmu.edu')) {
       throw new ApiError(ApiErrorCodes.UNAUTHORIZED, 'Invalid email domain')
     }
+
+    // attach users andrew id to the request object
+    req.andrewId = email.split('@')[0]
 
     // Call the next middleware or route handler
     next()

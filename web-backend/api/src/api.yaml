@@ -36,6 +36,7 @@ paths:
   
   /user/me:
     get:
+      deprecated: true
       tags:
         - user
       summary: Get the current user
@@ -209,7 +210,7 @@ paths:
           name: sortBy
           schema:
             type: string
-            enum: [timestamp, win, loose]
+            enum: [timestamp]
             default: timestamp
       responses:
         "200":
@@ -289,9 +290,6 @@ components:
         andrewId:
           type: string
           example: "acarnegie"
-        userId:
-          type: string
-          example: "123e4567-e89b-12d3-a456-426614174000"
         teamId:
           type: string
           example: "andrewc"

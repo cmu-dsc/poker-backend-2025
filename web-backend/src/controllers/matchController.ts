@@ -1,15 +1,14 @@
 import { MatchDto, UserDto } from '@api/generated'
 import { Request, Response } from 'express'
-import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import {
   getBotLog,
   getEngineLog,
   getMatchesByTeamId,
 } from 'src/services/matchService'
-import { checkUserIdPermissionForMatch } from 'src/services/permissions/matchPermissionService'
+import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
 import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
-import { getUserById } from 'src/services/userService'
+import { getUserByAndrewId } from 'src/services/userService'
 import {
   validateLimit,
   validateMatchId,
@@ -25,7 +24,7 @@ import { validateTeamName } from 'src/services/validators/teamValidatorService'
  * @param {Response<MatchDto[]>} res the response containing the matches
  */
 export const getMatchTeamByGithubUsername = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId: string },
   res: Response<MatchDto[]>,
 ) => {
   const githubName: string = validateTeamName(req.params.githubName)
@@ -34,10 +33,7 @@ export const getMatchTeamByGithubUsername = async (
   const sortBy: string = validateSortBy(req.query.sortBy)
   const order: 'asc' | 'desc' = validateOrder(req.query.order)
 
-  await checkUserIdPermissionsForTeamGithubName(
-    ((req as any).decodedToken as DecodedIdToken).uid,
-    githubName,
-  )
+  await checkUserIdPermissionsForTeamGithubName(req.andrewId, githubName)
 
   const matches: MatchDto[] = await getMatchesByTeamId(
     githubName,
@@ -56,15 +52,12 @@ export const getMatchTeamByGithubUsername = async (
  * @param {Response<string>} res the response containing the engine logs
  */
 export const getMatchByMatchIdLogsEngine = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId: string },
   res: Response<string>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
-  await checkUserIdPermissionForMatch(
-    ((req as any).decodedToken as DecodedIdToken).uid,
-    matchId,
-  )
+  await checkAndrewIdPermissionsForMatch(req.andrewId, matchId)
 
   const logs: string = await getEngineLog(matchId)
 
@@ -77,19 +70,14 @@ export const getMatchByMatchIdLogsEngine = async (
  * @param {Response<string>} res the response containing the bot logs
  */
 export const getMatchByMatchIdLogsBot = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId: string },
   res: Response<string>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
-  await checkUserIdPermissionForMatch(
-    ((req as any).decodedToken as DecodedIdToken).uid,
-    req.params.matchId,
-  )
+  await checkAndrewIdPermissionsForMatch(req.andrewId, req.params.matchId)
 
-  const user: UserDto = await getUserById(
-    ((req as any).decodedToken as DecodedIdToken).uid,
-  )
+  const user: UserDto = await getUserByAndrewId(req.andrewId)
   if (!user.teamId) {
     throw new ApiError(
       ApiErrorCodes.FORBIDDEN,
