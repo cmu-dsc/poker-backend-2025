@@ -36,7 +36,6 @@ paths:
   
   /user/me:
     get:
-      deprecated: true
       tags:
         - user
       summary: Get the current user

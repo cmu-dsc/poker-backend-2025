@@ -18,12 +18,12 @@ import {
  * @param {Response<TeamDto>} res the response containing the created team
  */
 export const postTeam = async (
-  req: Request<any, any, TeamDto> & { andrewId: string },
+  req: Request<any, any, TeamDto> & { andrewId?: string },
   res: Response<TeamDto>,
 ) => {
   const team: TeamDto = validateTeam(req.body)
 
-  await checkAndrewIdPartOfTeam(req.andrewId, team)
+  await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
   const createdTeam: TeamDto = await createTeam(team)
 
@@ -52,14 +52,14 @@ export const getTeamByGithubUsername = async (
  * @param {Response<TeamDto>} res the response containing the updated team
  */
 export const putTeamByGithubUsername = async (
-  req: Request<any, any, TeamDto> & { andrewId: string },
+  req: Request<any, any, TeamDto> & { andrewId?: string },
   res: Response<TeamDto>,
 ) => {
   const githubName: string = validateTeamName(req.params.githubName)
   const team: TeamDto = validateTeam(req.body)
 
   team.githubUsername = githubName
-  await checkAndrewIdPartOfTeam(req.andrewId, team)
+  await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
   const updatedTeam: TeamDto = await updateTeamByGithubUsername(
     githubName,
@@ -75,13 +75,13 @@ export const putTeamByGithubUsername = async (
  * @param {Response<any>} res the response
  */
 export const deleteTeamByGithubUsername = async (
-  req: Request<any, any, any, any> & { andrewId: string },
+  req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<any>,
 ) => {
   const githubName: string = validateTeamName(req.params.githubName)
 
   const team: TeamDto = await getTeamById(githubName)
-  await checkAndrewIdPartOfTeam(req.andrewId, team)
+  await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
   await deleteTeam(githubName)
 
