@@ -1,14 +1,12 @@
+/* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
 import type { TeamDto } from '../models/TeamDto';
-
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-
 export class TeamService {
-
     /**
      * Create a new team
      * Create a new team
@@ -32,7 +30,6 @@ export class TeamService {
             },
         });
     }
-
     /**
      * Get a team by github username
      * Get a team by github username
@@ -54,7 +51,6 @@ export class TeamService {
             },
         });
     }
-
     /**
      * Update a team by github username
      * Update a team by github username
@@ -84,7 +80,6 @@ export class TeamService {
             },
         });
     }
-
     /**
      * Delete a team by github username
      * Delete a team by github username
@@ -107,5 +102,4 @@ export class TeamService {
             },
         });
     }
-
 }

@@ -1,14 +1,12 @@
+/* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
 import type { MatchDto } from '../models/MatchDto';
-
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-
 export class MatchService {
-
     /**
      * Get all matches
      * Get all matches of my team
@@ -25,7 +23,7 @@ export class MatchService {
         limit: number = 10,
         offset?: number,
         sort: 'asc' | 'desc' = 'desc',
-        sortBy: 'timestamp' | 'win' | 'loose' = 'timestamp',
+        sortBy: 'timestamp' = 'timestamp',
     ): CancelablePromise<Array<MatchDto>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -41,7 +39,6 @@ export class MatchService {
             },
         });
     }
-
     /**
      * Get the engine logs of a match by match id
      * Get the engine logs of a match by match id
@@ -65,7 +62,6 @@ export class MatchService {
             },
         });
     }
-
     /**
      * Get the bot logs of a match by match id
      * Get the bot logs of a match by match id
@@ -89,5 +85,4 @@ export class MatchService {
             },
         });
     }
-
 }

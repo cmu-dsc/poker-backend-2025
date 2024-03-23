@@ -2,11 +2,16 @@ import { MatchDto } from '@api/generated'
 import { Query, SimpleQueryRowsResponse } from '@google-cloud/bigquery'
 import { DATASET_ID, MATCH_TABLE } from 'src/config/db'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
-import { bigqueryClient } from 'src/server'
+import { bigqueryClient, storageClient } from 'src/server'
 import { convertRowToMatchDto } from './converters/matchConverterService'
+import {
+  BUCKET_NAME,
+  getBotLogPathTeam,
+  getEngineLogPath,
+} from 'src/config/bucket'
 
 const GET_BY_MATCH_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE matchId = @matchId LIMIT 1`
-const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1 = @teamId OR team2 = @teamId ORDER BY @sortby @order LIMIT @limit OFFSET @offset`
+const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY @sortBy @order OFFSET @offset LIMIT @limit`
 
 /**
  * Retrieve a match from the database by matchId
@@ -22,7 +27,7 @@ export const getMatchById = async (matchId: string): Promise<MatchDto> => {
 
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  const matchRow = queryResult[0]
+  const matchRow = queryResult[0][0]
   if (!matchRow) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Match not found')
   }
@@ -51,7 +56,62 @@ export const getMatchesByTeamId = async (
     params: { teamId, limit, offset, sortBy, order },
   }
 
+  console.log(query)
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
 
-  return queryResult.map(convertRowToMatchDto)
+  return queryResult[0].map(convertRowToMatchDto)
+}
+
+/**
+ * Get the engine logs for a match by the match id
+ * @param {string} matchId the id of the match
+ * @returns {Promise<string>} the engine logs
+ */
+export const getEngineLog = async (matchId: string): Promise<string> => {
+  const match: MatchDto = await getMatchById(matchId)
+
+  const content: string = (
+    await storageClient
+      .bucket(BUCKET_NAME)
+      .file(getEngineLogPath(match))
+      .download()
+  ).toString()
+
+  return content
+}
+
+/**
+ * Get the bot logs for a match by the match id
+ * @param {string} matchId the id of the match
+ * @param {string} teamGithubUsername the github username of the team
+ * @returns {Promise<string>} the bot logs
+ */
+export const getBotLog = async (
+  matchId: string,
+  teamGithubUsername: string,
+): Promise<string> => {
+  const match: MatchDto = await getMatchById(matchId)
+  let teamNo: 1 | 2 = 0 as 1 | 2
+  switch (teamGithubUsername) {
+    case match.team1Id:
+      teamNo = 1
+      break
+    case match.team2Id:
+      teamNo = 2
+      break
+    default:
+      throw new ApiError(
+        ApiErrorCodes.BUSINESS_LOGIC_ERROR,
+        'Team not found in match',
+      )
+  }
+
+  const content: string = (
+    await storageClient
+      .bucket(BUCKET_NAME)
+      .file(getBotLogPathTeam(match, teamNo))
+      .download()
+  ).toString()
+
+  return content
 }

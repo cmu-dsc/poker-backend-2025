@@ -3,24 +3,22 @@ import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { z } from 'zod'
 
 /**
- * A validator for the team dto
- */
-const teamValidator = z.object({
-  githubUsername: z
-    .string()
-    .min(1)
-    .regex(/^[a-zA-Z0-9-]+$/),
-  members: z.array(z.string()).max(4).min(1),
-  elo: z.number().int().min(0),
-})
-
-/**
  * A validator for team names
  */
 const teamNameValidator = z
   .string()
   .min(1)
   .regex(/^[a-zA-Z0-9-]+$/)
+
+  
+/**
+ * A validator for the team dto
+ */
+const teamValidator = z.object({
+  githubUsername: teamNameValidator,
+  members: z.array(z.string()).max(4).min(1),
+  elo: z.number().int().min(0).optional(),
+})
 
 /**
  * Validate a team

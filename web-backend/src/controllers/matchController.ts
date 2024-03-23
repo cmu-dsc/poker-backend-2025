@@ -1,5 +1,22 @@
-import { MatchDto } from '@api/generated'
+import { MatchDto, UserDto } from '@api/generated'
 import { Request, Response } from 'express'
+import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
+import {
+  getBotLog,
+  getEngineLog,
+  getMatchesByTeamId,
+} from 'src/services/matchService'
+import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
+import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
+import { getUserByAndrewId } from 'src/services/userService'
+import {
+  validateLimit,
+  validateMatchId,
+  validateOffset,
+  validateOrder,
+  validateSortBy,
+} from 'src/services/validators/matchValidatorService'
+import { validateTeamName } from 'src/services/validators/teamValidatorService'
 
 /**
  * Get all matches for a team by the team id (github username)
@@ -7,10 +24,26 @@ import { Request, Response } from 'express'
  * @param {Response<MatchDto[]>} res the response containing the matches
  */
 export const getMatchTeamByGithubUsername = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<MatchDto[]>,
 ) => {
-  res.status(501).json(undefined)
+  const githubName: string = validateTeamName(req.params.githubUsername)
+  const limit: number = validateLimit(req.query.limit)
+  const offset: number = validateOffset(req.query.offset)
+  const sortBy: string = validateSortBy(req.query.sortBy)
+  const order: 'asc' | 'desc' = validateOrder(req.query.order)
+
+  await checkUserIdPermissionsForTeamGithubName(req.andrewId!, githubName)
+
+  const matches: MatchDto[] = await getMatchesByTeamId(
+    githubName,
+    sortBy,
+    limit,
+    offset,
+    order,
+  )
+
+  res.status(200).json(matches)
 }
 
 /**
@@ -19,10 +52,16 @@ export const getMatchTeamByGithubUsername = async (
  * @param {Response<string>} res the response containing the engine logs
  */
 export const getMatchByMatchIdLogsEngine = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<string>,
 ) => {
-  res.status(501).json(undefined)
+  const matchId: string = validateMatchId(req.params.matchId)
+
+  await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
+
+  const logs: string = await getEngineLog(matchId)
+
+  res.status(200).send(logs)
 }
 
 /**
@@ -31,8 +70,21 @@ export const getMatchByMatchIdLogsEngine = async (
  * @param {Response<string>} res the response containing the bot logs
  */
 export const getMatchByMatchIdLogsBot = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<string>,
 ) => {
-  res.status(501).json(undefined)
+  const matchId: string = validateMatchId(req.params.matchId)
+
+  await checkAndrewIdPermissionsForMatch(req.andrewId!, req.params.matchId)
+
+  const user: UserDto = await getUserByAndrewId(req.andrewId!)
+  if (!user.teamId) {
+    throw new ApiError(
+      ApiErrorCodes.FORBIDDEN,
+      'User does not have permission to access this match',
+    )
+  }
+  const logs: string = await getBotLog(matchId, user.teamId)
+
+  res.status(200).send(logs)
 }

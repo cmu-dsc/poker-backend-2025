@@ -1,5 +1,6 @@
 import { UserDto } from '@api/generated'
 import { Request, Response } from 'express'
+import { getUserByAndrewId, leaveTeam } from 'src/services/userService'
 
 /**
  * Get ones own user by auth token
@@ -7,20 +8,26 @@ import { Request, Response } from 'express'
  * @param {Response<UserDto>} res the response containing the user
  */
 export const getUserMe = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId?: string},
   res: Response<UserDto>,
 ) => {
-  res.status(501).json(undefined)
+
+  const user: UserDto = await getUserByAndrewId(req.andrewId!)
+
+  res.status(200).json(user)
 }
 
 /**
  * Leave the current team
- * @param {Request<any, any, any, any>} req the request containing the user
+ * @param {Request<any, any, any, any> & { andrewId: string}} req the request containing the user
  * @param {Response<>} res the response indicating success
  */
 export const postUserTeamLeave = async (
-  req: Request<any, any, any, any>,
+  req: Request<any, any, any, any> & { andrewId?: string},
   res: Response<any>,
 ) => {
-  res.status(501).json(undefined)
+
+  leaveTeam(req.andrewId!)
+
+  res.status(204).send()
 }

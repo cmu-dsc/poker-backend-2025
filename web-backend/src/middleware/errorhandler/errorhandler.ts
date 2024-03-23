@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { ApiError, ApiErrorCodes } from './APIError'
+import logger from '../logger/logger'
 
 /**
  * The string representation of an internal server error.
@@ -22,8 +23,12 @@ const errorHandler = (
 ) => {
     let status: number
     status = error?.status || ApiErrorCodes.INTERNAL_SERVER_ERROR
-    const message = error?.message || INTERNAL_SERVER_ERROR_STR
+    let message = error?.message || INTERNAL_SERVER_ERROR_STR
 
+    if (status === ApiErrorCodes.INTERNAL_SERVER_ERROR) {
+        logger.error(error)
+        message = INTERNAL_SERVER_ERROR_STR
+    }
     res.status(status).send({
         message,
     })

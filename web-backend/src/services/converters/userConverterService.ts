@@ -7,7 +7,6 @@ import { UserDto } from "@api/generated"
  */
 export const convertRowToUserDto = (row: any): UserDto => {
   return {
-    userId: row.userId,
     teamId: row.teamId,
     andrewId: row.andrewId,
   }
