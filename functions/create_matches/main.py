@@ -294,8 +294,8 @@ def update_mmr(team1, team2, winner, bigquery_client):
 
     # Calculate the updated MMR using the Elo rating formula
     k_factor = 32  # Adjust the K-factor as needed
-    team1_updated_mmr = team1_mmr + k_factor * (team1_actual - team1_expected)
-    team2_updated_mmr = team2_mmr + k_factor * (team2_actual - team2_expected)
+    team1_updated_mmr = int(team1_mmr + k_factor * (team1_actual - team1_expected))
+    team2_updated_mmr = int(team2_mmr + k_factor * (team2_actual - team2_expected))
 
     # Update the MMR in the BigQuery table
     update_query = f"""
