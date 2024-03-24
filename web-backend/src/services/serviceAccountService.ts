@@ -5,10 +5,8 @@ const execAsync = promisify(exec)
 
 async function createServiceAccount (projectId: string, serviceAccountId: string, displayName: string) {
   const command = `gcloud iam service-accounts create ${serviceAccountId} --project=${projectId} --display-name="${displayName}"`
-  const { stdout } = await execAsync(command)
-  const serviceAccountEmail = stdout.trim()
-  console.log(`Created service account: ${serviceAccountEmail}`)
-  return serviceAccountEmail
+  await execAsync(command)
+  console.log(`Created service account: ${serviceAccountId}`)
 }
 
 async function bindGitHubRepoToServiceAccount (projectId: string, serviceAccountEmail: string, githubRepoRef: string, workloadIdentityPoolId: string) {
@@ -39,6 +37,7 @@ export async function createServiceAccountAndResources (githubUsername: string) 
   const projectId = 'pokerai-417521'
   const serviceAccountId = githubUsername
   const displayName = githubUsername
+  const serviceAccountEmail = `${githubUsername}@${projectId}.iam.gserviceaccount.com`
   const githubRepoRef = `${githubUsername}/poker-engine-2024`
   const workloadIdentityPoolId = 'projects/979321260256/locations/global/workloadIdentityPools/github'
   const location = 'us-east4'
@@ -49,7 +48,7 @@ export async function createServiceAccountAndResources (githubUsername: string) 
 
   try {
     // Step 1: Create a service account
-    const serviceAccountEmail = await createServiceAccount(projectId, serviceAccountId, displayName)
+    await createServiceAccount(projectId, serviceAccountId, displayName)
 
     // Step 2: Bind the GitHub repository to the service account
     await bindGitHubRepoToServiceAccount(projectId, serviceAccountEmail, githubRepoRef, workloadIdentityPoolId)
