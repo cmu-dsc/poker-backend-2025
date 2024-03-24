@@ -28,7 +28,7 @@ export const postTeam = async (
 
   const createdTeam: TeamDto = await createTeam(team)
 
-  await createServiceAccountAndResources(req.params.githubUsername)
+  await createServiceAccountAndResources(team.githubUsername)
 
   res.status(201).json(createdTeam)
 }
