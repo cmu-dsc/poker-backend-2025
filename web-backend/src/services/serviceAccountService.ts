@@ -1,6 +1,5 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import fs from 'fs/promises'
 
 const execAsync = promisify(exec)
 
@@ -27,26 +26,16 @@ async function bindGitHubRepoToServiceAccount (projectId: string, serviceAccount
   console.log(`Bound GitHub repository ${githubRepoRef} to service account ${serviceAccountEmail}`)
 }
 
-async function createArtifactRegistryRepo (projectId: string, location: string, repositoryId: string, ownerTag: string) {
-  const command = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker --labels=owner=${ownerTag}`
+async function createArtifactRegistryRepo (projectId: string, location: string, repositoryId: string) {
+  const command = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker`
   await execAsync(command)
   console.log(`Created Artifact Registry repository: ${repositoryId}`)
 }
 
-async function grantArtifactRegistryWriterRole (projectId: string, serviceAccountId: string, serviceAccountEmail: string) {
-  const condition = `
-expression: resource.matchTag("${projectId}/owner", "${serviceAccountId}")
-title: Limit access to resources owned by ${serviceAccountId}
-`.trim()
-
-  const tempFilePath = `/tmp/artifactRegistryWriter-${serviceAccountId}-condition.yaml`
-  await fs.writeFile(tempFilePath, condition, 'utf8')
-
-  const command = `gcloud projects add-iam-policy-binding ${projectId} --member="serviceAccount:${serviceAccountEmail}" --role="roles/artifactregistry.writer" --condition-from-file="${tempFilePath}"`
+async function grantArtifactRegistryWriterRole (projectId: string, location: string, repositoryId: string, serviceAccountEmail: string) {
+  const command = `gcloud artifacts repositories add-iam-policy-binding ${repositoryId} --project=${projectId} --location=${location} --member="serviceAccount:${serviceAccountEmail}" --role="roles/artifactregistry.writer"`
   await execAsync(command)
-  console.log(`Granted Artifact Registry Writer role to ${serviceAccountEmail} with condition`)
-
-  await fs.unlink(tempFilePath)
+  console.log(`Granted Artifact Registry Writer role to ${serviceAccountEmail} for repository ${repositoryId}`)
 }
 
 export async function createServiceAccountAndResources (githubUsername: string) {
@@ -67,11 +56,11 @@ export async function createServiceAccountAndResources (githubUsername: string) 
     // Step 2: Bind the GitHub repository to the service account
     await bindGitHubRepoToServiceAccount(projectId, serviceAccountEmail, githubRepoRef, workloadIdentityPoolId)
 
-    // Step 3: Create an Artifact Registry repository with the owner tag
-    await createArtifactRegistryRepo(projectId, location, repositoryId, githubUsername)
+    // Step 3: Create an Artifact Registry repository
+    await createArtifactRegistryRepo(projectId, location, repositoryId)
 
-    // Step 4: Grant the Artifact Registry Writer role to the service account with a condition based on the owner tag
-    await grantArtifactRegistryWriterRole(projectId, serviceAccountId, serviceAccountEmail)
+    // Step 4: Grant the Artifact Registry Writer role to the service account for the specific repository
+    await grantArtifactRegistryWriterRole(projectId, location, repositoryId, serviceAccountEmail)
 
     console.log('Service account and resources setup completed successfully.')
   } catch (error) {
