@@ -3,6 +3,17 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
+async function logCurrentServiceAccount () {
+  try {
+    const { stdout } = await execAsync('gcloud config get-value account')
+    const lines = stdout.split('\n').filter(line => line.trim() !== '')
+    const accountEmail = lines[lines.length - 1].trim()
+    console.log(`Current service account: ${accountEmail}`)
+  } catch (error) {
+    console.error('Error fetching current service account:', error)
+  }
+}
+
 async function createServiceAccount (projectId: string, serviceAccountId: string, displayName: string) {
   const command = `gcloud iam service-accounts create ${serviceAccountId} --project=${projectId} --display-name="${displayName}"`
   await execAsync(command)
@@ -47,6 +58,7 @@ export async function createServiceAccountAndResources (githubUsername: string) 
   const roleDescription = `Custom role for ${githubUsername}`
 
   try {
+    await logCurrentServiceAccount()
     // Step 1: Create a service account
     await createServiceAccount(projectId, serviceAccountId, displayName)
 

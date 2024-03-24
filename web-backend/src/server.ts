@@ -6,7 +6,7 @@ import { BigQuery } from '@google-cloud/bigquery'
 import { Storage } from '@google-cloud/storage'
 
 export const bigqueryClient = new BigQuery({credentials: JSON.parse(env.GCLOUD_ADMIN_KEY!), projectId: "pokerai-417521"})
-export const storageClient = new Storage({credentials: JSON.parse(env.GCLOUD_ADMIN_KEY!), projectId: "pokerai-417521"});
+export const storageClient = new Storage({credentials: JSON.parse(env.GCLOUD_ADMIN_KEY!), projectId: "pokerai-417521"})
 
 const server = http.createServer(app)
 server.listen(env.PORT, () => {
