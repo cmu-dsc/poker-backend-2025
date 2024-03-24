@@ -33,39 +33,18 @@ async function createArtifactRegistryRepo (projectId: string, location: string, 
   console.log(`Created Artifact Registry repository: ${repositoryId}`)
 }
 
-async function createCustomRole (projectId: string, roleId: string, title: string, description: string) {
-  const yamlContent = `
-title: "${title}"
-description: "${description}"
-stage: "ALPHA"
-includedPermissions:
-- artifactregistry.repositories.downloadArtifacts
-- artifactregistry.repositories.uploadArtifacts
-- artifactregistry.repositories.get
-`.trim()
-
-  const tempFilePath = `/tmp/${roleId}.yaml`
-  await fs.writeFile(tempFilePath, yamlContent, 'utf8')
-
-  const createCommand = `gcloud iam roles create ${roleId} --project=${projectId} --file=${tempFilePath}`
-  await execAsync(createCommand)
-  console.log(`Created custom role: ${roleId}`)
-
-  await fs.unlink(tempFilePath)
-}
-
-async function grantCustomRoleToServiceAccount (projectId: string, serviceAccountId: string, serviceAccountEmail: string, roleId: string) {
+async function grantArtifactRegistryWriterRole (projectId: string, serviceAccountId: string, serviceAccountEmail: string) {
   const condition = `
 expression: resource.matchTag("${projectId}/owner", "${serviceAccountId}")
 title: Limit access to resources owned by ${serviceAccountId}
 `.trim()
 
-  const tempFilePath = `/tmp/${roleId}-condition.yaml`
+  const tempFilePath = `/tmp/artifactRegistryWriter-${serviceAccountId}-condition.yaml`
   await fs.writeFile(tempFilePath, condition, 'utf8')
 
-  const command = `gcloud projects add-iam-policy-binding ${projectId} --member="serviceAccount:${serviceAccountEmail}" --role="projects/${projectId}/roles/${roleId}" --condition-from-file="${tempFilePath}"`
+  const command = `gcloud projects add-iam-policy-binding ${projectId} --member="serviceAccount:${serviceAccountEmail}" --role="roles/artifactregistry.writer" --condition-from-file="${tempFilePath}"`
   await execAsync(command)
-  console.log(`Granted custom role ${roleId} to ${serviceAccountEmail}`)
+  console.log(`Granted Artifact Registry Writer role to ${serviceAccountEmail} with condition`)
 
   await fs.unlink(tempFilePath)
 }
@@ -79,9 +58,6 @@ export async function createServiceAccountAndResources (githubUsername: string) 
   const workloadIdentityPoolId = 'projects/979321260256/locations/global/workloadIdentityPools/github'
   const location = 'us-east4'
   const repositoryId = githubUsername
-  const roleId = `${githubUsername}Role`
-  const roleTitle = roleId
-  const roleDescription = `Custom role for ${githubUsername}`
 
   try {
     await logCurrentServiceAccount()
@@ -94,11 +70,8 @@ export async function createServiceAccountAndResources (githubUsername: string) 
     // Step 3: Create an Artifact Registry repository with the owner tag
     await createArtifactRegistryRepo(projectId, location, repositoryId, githubUsername)
 
-    // Step 4: Create a custom role with specific permissions
-    await createCustomRole(projectId, roleId, roleTitle, roleDescription)
-
-    // Step 5: Grant the custom role to the service account with a condition based on the owner tag
-    await grantCustomRoleToServiceAccount(projectId, serviceAccountId, serviceAccountEmail, roleId)
+    // Step 4: Grant the Artifact Registry Writer role to the service account with a condition based on the owner tag
+    await grantArtifactRegistryWriterRole(projectId, serviceAccountId, serviceAccountEmail)
 
     console.log('Service account and resources setup completed successfully.')
   } catch (error) {
