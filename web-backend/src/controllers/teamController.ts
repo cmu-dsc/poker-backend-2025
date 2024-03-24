@@ -1,5 +1,6 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
+import { createServiceAccountAndResources } from 'src/services/serviceAccountService'
 import { checkAndrewIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
 import {
   createTeam,
@@ -26,6 +27,8 @@ export const postTeam = async (
   await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
   const createdTeam: TeamDto = await createTeam(team)
+
+  await createServiceAccountAndResources(req.params.githubUsername)
 
   res.status(201).json(createdTeam)
 }
