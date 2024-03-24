@@ -1,5 +1,13 @@
 FROM node:21-alpine3.18
 
+# Install gcloud CLI
+RUN apk add --no-cache curl python3 py3-pip && \
+    curl -sSL https://sdk.cloud.google.com | bash && \
+    ln -s /root/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud
+
+# Set the PATH to include gcloud CLI
+ENV PATH $PATH:/root/google-cloud-sdk/bin
+
 # Create app directory
 WORKDIR /app
 
