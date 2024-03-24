@@ -2,13 +2,11 @@ import time
 import functions_framework
 import random
 from google.cloud import bigquery
-from kubernetes import client
+from kubernetes import client, config
 from google.auth import compute_engine
 from google.auth.transport.requests import Request
 from concurrent.futures import ThreadPoolExecutor
 import uuid
-
-# TODO: remove secrets lol
 
 
 @functions_framework.http
@@ -109,19 +107,22 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.create_namespaced_service(namespace="default", body=bot2_service)
 
     # Create the game engine Deployment
-    game_engine_deployment = create_game_engine_deployment(
+    game_engine_pod = create_game_engine_pod(
         team1, team2, match_id, bot1_uuid, bot2_uuid
     )
-    apps_v1.create_namespaced_deployment(
-        namespace="default", body=game_engine_deployment
+    core_v1.create_namespaced_pod(
+        namespace="default", body=game_engine_pod
     )
+
+    print("CREATED pod")
 
     # Wait for the game engine to finish running
     while True:
-        game_engine_status = apps_v1.read_namespaced_deployment_status(
+        game_engine_status = core_v1.read_namespaced_pod(
             name=f"engine-{match_id}", namespace="default"
         ).status
-        if game_engine_status.replicas == game_engine_status.available_replicas:
+        print(f"got status phase {game_engine_status.phase}")
+        if game_engine_status.phase == "Succeeded":
             break
         time.sleep(30)  # Wait for 30 seconds before checking again
 
@@ -155,7 +156,7 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.delete_namespaced_service(
         name=f"{team2}-bot-service-{bot2_uuid}", namespace="default"
     )
-    apps_v1.delete_namespaced_deployment(name=f"engine-{match_id}", namespace="default")
+    apps_v1.delete_namespaced_pod(name=f"engine-{match_id}", namespace="default")
 
 
 def create_bot_resources(team_name):
@@ -202,6 +203,51 @@ def create_bot_resources(team_name):
 
     return deployment, service, bot_uuid
 
+
+def create_game_engine_pod(team1, team2, match_id, bot1_uuid, bot2_uuid):
+    pod=client.V1Pod(
+        metadata=client.V1ObjectMeta(name=f"engine-{match_id}"),
+        spec=client.V1PodSpec(
+            containers=[
+                client.V1Container(
+                    name="engine",
+                    image="us-east4-docker.pkg.dev/pokerai-417521/cmu-dsc/engine:latest",
+                    env=[
+                        client.V1EnvVar(name="PLAYER_1_NAME", value=team1),
+                        client.V1EnvVar(name="PLAYER_2_NAME", value=team2),
+                        client.V1EnvVar(
+                            name="PLAYER_1_DNS",
+                            value=f"{team1}-bot-service-{bot1_uuid}:50051",
+                        ),
+                        client.V1EnvVar(
+                            name="PLAYER_2_DNS",
+                            value=f"{team2}-bot-service-{bot2_uuid}:50051",
+                        ),
+                        client.V1EnvVar(name="MATCH_ID", value=str(match_id)),
+                        client.V1EnvVar(
+                            name="BUCKET_NAME", value="poker-ai-blobs"
+                        ),
+                        client.V1EnvVar(
+                            name="DATASET_ID",
+                            value="pokerai-417521.poker_dataset",
+                        ),
+                    ],
+                    volume_mounts=[
+                        client.V1VolumeMount(
+                            name="logs", mount_path="/usr/src/app/logs"
+                        ),
+                    ],
+                    restart_policy="OnFailure"
+                )
+            ],
+            volumes=[
+                client.V1Volume(
+                    name="logs", empty_dir=client.V1EmptyDirVolumeSource()
+                ),
+            ],
+        ),
+    )
+    return pod
 
 def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
     # Create the game engine Deployment spec
