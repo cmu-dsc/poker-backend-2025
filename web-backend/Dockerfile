@@ -1,11 +1,10 @@
-FROM node:21-alpine3.18
+FROM node:21-alpine
 
-# Install gcloud CLI
-RUN apk add --no-cache curl python3 py3-pip && \
-    curl -sSL https://sdk.cloud.google.com | bash && \
-    ln -s /root/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud
+# Install bash and dependencies for Google Cloud SDK
+RUN apk add --no-cache bash curl python3 py3-pip gcc python3-dev musl-dev libc6-compat openssh-client git && \
+    curl -sSL https://sdk.cloud.google.com | bash
 
-# Set the PATH to include gcloud CLI
+# Set the PATH to include gcloud and gsutil
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
 # Create app directory
