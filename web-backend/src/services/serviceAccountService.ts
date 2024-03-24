@@ -1,5 +1,6 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import fs from 'fs/promises'
 
 const execAsync = promisify(exec)
 
@@ -26,22 +27,47 @@ async function bindGitHubRepoToServiceAccount (projectId: string, serviceAccount
   console.log(`Bound GitHub repository ${githubRepoRef} to service account ${serviceAccountEmail}`)
 }
 
-async function createArtifactRegistryRepo (projectId: string, location: string, repositoryId: string) {
-  const command = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker`
+async function createArtifactRegistryRepo (projectId: string, location: string, repositoryId: string, ownerTag: string) {
+  const command = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker --labels=owner=${ownerTag}`
   await execAsync(command)
   console.log(`Created Artifact Registry repository: ${repositoryId}`)
 }
 
-async function createCustomRole (projectId: string, roleId: string, title: string, description: string, repositoryName: string) {
-  const command = `gcloud iam roles create ${roleId} --project=${projectId} --title="${title}" --description="${description}" --permissions=artifactregistry.repositories.uploadArtifacts,artifactregistry.repositories.downloadArtifacts --condition='resource.name.startsWith("projects/${projectId}/locations/*/repositories/${repositoryName}")'`
-  await execAsync(command)
+async function createCustomRole (projectId: string, roleId: string, title: string, description: string) {
+  const yamlContent = `
+title: "${title}"
+description: "${description}"
+stage: "ALPHA"
+includedPermissions:
+- artifactregistry.repositories.downloadArtifacts
+- artifactregistry.repositories.uploadArtifacts
+- artifactregistry.repositories.get
+`.trim()
+
+  const tempFilePath = `/tmp/${roleId}.yaml`
+  await fs.writeFile(tempFilePath, yamlContent, 'utf8')
+
+  const createCommand = `gcloud iam roles create ${roleId} --project=${projectId} --file=${tempFilePath}`
+  await execAsync(createCommand)
   console.log(`Created custom role: ${roleId}`)
+
+  await fs.unlink(tempFilePath)
 }
 
-async function grantCustomRoleToServiceAccount (projectId: string, serviceAccountEmail: string, roleId: string) {
-  const command = `gcloud projects add-iam-policy-binding ${projectId} --member="serviceAccount:${serviceAccountEmail}" --role="projects/${projectId}/roles/${roleId}"`
+async function grantCustomRoleToServiceAccount (projectId: string, serviceAccountId: string, serviceAccountEmail: string, roleId: string) {
+  const condition = `
+expression: resource.matchTag("${projectId}/owner", "${serviceAccountId}")
+title: Limit access to resources owned by ${serviceAccountId}
+`.trim()
+
+  const tempFilePath = `/tmp/${roleId}-condition.yaml`
+  await fs.writeFile(tempFilePath, condition, 'utf8')
+
+  const command = `gcloud projects add-iam-policy-binding ${projectId} --member="serviceAccount:${serviceAccountEmail}" --role="projects/${projectId}/roles/${roleId}" --condition-from-file="${tempFilePath}"`
   await execAsync(command)
   console.log(`Granted custom role ${roleId} to ${serviceAccountEmail}`)
+
+  await fs.unlink(tempFilePath)
 }
 
 export async function createServiceAccountAndResources (githubUsername: string) {
@@ -65,14 +91,14 @@ export async function createServiceAccountAndResources (githubUsername: string) 
     // Step 2: Bind the GitHub repository to the service account
     await bindGitHubRepoToServiceAccount(projectId, serviceAccountEmail, githubRepoRef, workloadIdentityPoolId)
 
-    // Step 3: Create an Artifact Registry repository
-    await createArtifactRegistryRepo(projectId, location, repositoryId)
+    // Step 3: Create an Artifact Registry repository with the owner tag
+    await createArtifactRegistryRepo(projectId, location, repositoryId, githubUsername)
 
     // Step 4: Create a custom role with specific permissions
-    await createCustomRole(projectId, roleId, roleTitle, roleDescription, repositoryId)
+    await createCustomRole(projectId, roleId, roleTitle, roleDescription)
 
-    // Step 5: Grant the custom role to the service account
-    await grantCustomRoleToServiceAccount(projectId, serviceAccountEmail, roleId)
+    // Step 5: Grant the custom role to the service account with a condition based on the owner tag
+    await grantCustomRoleToServiceAccount(projectId, serviceAccountId, serviceAccountEmail, roleId)
 
     console.log('Service account and resources setup completed successfully.')
   } catch (error) {
