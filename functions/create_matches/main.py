@@ -2,7 +2,7 @@ import time
 import functions_framework
 import random
 from google.cloud import bigquery
-from kubernetes import client, config
+from kubernetes import client
 from google.auth import compute_engine
 from google.auth.transport.requests import Request
 from concurrent.futures import ThreadPoolExecutor
@@ -16,7 +16,7 @@ def create_matches(request):
 
     # Configure the Kubernetes client to use the ADC
     configuration = client.Configuration()
-    configuration.host = "https://34.86.249.129"  # Use your GKE cluster endpoint
+    configuration.host = "https://34.85.198.243"  # Use your GKE cluster endpoint
     configuration.verify_ssl = False  # Consider the security implications in production
     credentials.refresh(Request())
     configuration.api_key = {"authorization": "Bearer " + credentials.token}
@@ -57,25 +57,16 @@ def create_matches(request):
                 opponent = random.choice(potential_opponents)
                 team_pairs.append((team["githubUsername"], opponent["githubUsername"]))
                 # Mark both teams as matched
-                matched_teams.update(
-                    [team["githubUsername"], opponent["githubUsername"]]
-                )
+                matched_teams.update([team["githubUsername"], opponent["githubUsername"]]) 
             else:
                 # If no potential opponents are available (likely at the end of the list), match with any unmatched team
-                if (
-                    len(matched_teams) < len(teams) - 1
-                ):  # Ensure there's at least one team left to match
-                    remaining_teams = [
-                        t for t in teams if t["githubUsername"] not in matched_teams
-                    ]
-                    if remaining_teams:
-                        opponent = remaining_teams[0]
-                        team_pairs.append(
-                            (team["githubUsername"], opponent["githubUsername"])
-                        )
-                        matched_teams.update(
-                            [team["githubUsername"], opponent["githubUsername"]]
-                        )
+                remaining_teams = [
+                    t for t in teams if t["githubUsername"] not in matched_teams
+                ]
+                if remaining_teams:
+                    opponentName = random.choice(list(matched_teams))
+                    team_pairs.append((team["githubUsername"], opponentName))
+                    matched_teams.update([team["githubUsername"]]) 
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
@@ -182,8 +173,8 @@ def create_bot_resources(team_name):
                             image=f"us-east4-docker.pkg.dev/pokerai-417521/{team_name}/pokerbot:latest",
                             ports=[client.V1ContainerPort(container_port=50051)],
                             resources=client.V1ResourceRequirements(
-                                limits={"cpu": "1", "memory": "2Gi"},
-                                requests={"cpu": "0.5", "memory": "2Gi"},
+                                limits={"cpu": "1", "memory": "1.8Gi"},
+                                requests={"cpu": "0.5", "memory": "1.8Gi"},
                             ),
                         )
                     ],
@@ -255,7 +246,9 @@ def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
         metadata=client.V1ObjectMeta(name=f"engine-{match_id}"),
         spec=client.V1DeploymentSpec(
             replicas=1,
-            selector=client.V1LabelSelector(match_labels={"app": f"engine-{match_id}"}),
+            selector=client.V1LabelSelector(
+                match_labels={"app": f"engine-{match_id}"}
+            ),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(labels={"app": f"engine-{match_id}"}),
                 spec=client.V1PodSpec(
@@ -282,19 +275,10 @@ def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
                                     name="DATASET_ID",
                                     value="pokerai-417521.poker_dataset",
                                 ),
-                                client.V1EnvVar(
-                                    name="GOOGLE_APPLICATION_CREDENTIALS",
-                                    value="/var/secrets/google/service-account-key.json",
-                                ),
                             ],
                             volume_mounts=[
                                 client.V1VolumeMount(
                                     name="logs", mount_path="/usr/src/app/logs"
-                                ),
-                                client.V1VolumeMount(
-                                    name="service-account-key",
-                                    mount_path="/var/secrets/google",
-                                    read_only=True,
                                 ),
                             ],
                         )
@@ -302,12 +286,6 @@ def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
                     volumes=[
                         client.V1Volume(
                             name="logs", empty_dir=client.V1EmptyDirVolumeSource()
-                        ),
-                        client.V1Volume(
-                            name="service-account-key",
-                            secret=client.V1SecretVolumeSource(
-                                secret_name="service-account-key"
-                            ),
                         ),
                     ],
                 ),

@@ -11,31 +11,17 @@ export class MatchService {
      * Get all matches
      * Get all matches of my team
      * @param githubUsername The github username of the team
-     * @param limit The number of matches to return
-     * @param offset The number of matches to skip
-     * @param sort The order of the matches
-     * @param sortBy
      * @returns MatchDto OK
      * @throws ApiError
      */
     public static getMatchTeam(
         githubUsername: string,
-        limit: number = 10,
-        offset?: number,
-        sort: 'asc' | 'desc' = 'desc',
-        sortBy: 'timestamp' = 'timestamp',
     ): CancelablePromise<Array<MatchDto>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/match/team/{githubUsername}',
             path: {
                 'githubUsername': githubUsername,
-            },
-            query: {
-                'limit': limit,
-                'offset': offset,
-                'sort': sort,
-                'sortBy': sortBy,
             },
         });
     }

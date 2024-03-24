@@ -11,7 +11,7 @@ import {
 } from 'src/config/bucket'
 
 const GET_BY_MATCH_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE matchId = @matchId LIMIT 1`
-const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY @sortBy @order OFFSET @offset LIMIT @limit`
+const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY timestamp desc`
 
 /**
  * Retrieve a match from the database by matchId
@@ -37,28 +37,18 @@ export const getMatchById = async (matchId: string): Promise<MatchDto> => {
 /**
  * Retrieve all matches from the database by TeamId
  * @param {string} teamId the id of the team
- * @param {string} sortBy the column to sort by @default timestamp
- * @param {number} limit the maximum number of matches to return
- * @param {number} offset the number of matches to skip
- * @param {"dec" | "asc"} order the order to sort by
  * @returns {Promise<MatchDto[]>} all matches
  */
 export const getMatchesByTeamId = async (
   teamId: string,
-  sortBy: string = 'timestamp',
-  limit: number = 10,
-  offset: number = 0,
-  order: 'desc' | 'asc' = 'desc',
 ): Promise<MatchDto[]> => {
   const query: Query = {
     query: GET_ALL_FILTERED_MATCH_QUERY,
     location: 'US',
-    params: { teamId, limit, offset, sortBy, order },
+    params: { teamId },
   }
 
-  console.log(query)
   const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
-
   return queryResult[0].map(convertRowToMatchDto)
 }
 
@@ -70,14 +60,17 @@ export const getMatchesByTeamId = async (
 export const getEngineLog = async (matchId: string): Promise<string> => {
   const match: MatchDto = await getMatchById(matchId)
 
-  const content: string = (
-    await storageClient
-      .bucket(BUCKET_NAME)
-      .file(getEngineLogPath(match))
-      .download()
-  ).toString()
-
-  return content
+  try {
+    const content: string = (
+      await storageClient
+        .bucket(BUCKET_NAME)
+        .file(getEngineLogPath(match))
+        .download()
+    ).toString()
+    return content
+  } catch (e) {
+    throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
+  }
 }
 
 /**
@@ -106,12 +99,16 @@ export const getBotLog = async (
       )
   }
 
-  const content: string = (
-    await storageClient
-      .bucket(BUCKET_NAME)
-      .file(getBotLogPathTeam(match, teamNo))
-      .download()
-  ).toString()
+  try {
+    const content: string = (
+      await storageClient
+        .bucket(BUCKET_NAME)
+        .file(getBotLogPathTeam(match, teamNo))
+        .download()
+    ).toString()
 
-  return content
+    return content
+  } catch (e) {
+    throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Bot log not found')
+  }
 }

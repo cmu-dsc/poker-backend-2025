@@ -4,7 +4,7 @@ import { z } from 'zod'
 /**
  * A validator for match IDs
  */
-const matchIdValidator = z.string().uuid()
+const matchIdValidator = z.string()
 
 /**
  * A validator for limits
