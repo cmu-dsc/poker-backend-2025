@@ -31,6 +31,14 @@ spec:
           value: poker-ai-blobs
         - name: DATASET_ID
           value: pokerai-417521.poker_dataset
+        - name: INSTANCE_CONNECTION_NAME
+          value: pokerai-417521:us-east4:pokerai-sql
+        - name: DB_USER
+          value: root
+        - name: DB_PASS
+          value: .YFHUMhVJry#'SDt
+        - name: DB_NAME
+          value: pokerai-db
         volumeMounts:
         - name: logs
           mountPath: /usr/src/app/logs

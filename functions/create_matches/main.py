@@ -1,11 +1,12 @@
 import time
 import functions_framework
-import random
-from google.cloud import bigquery
 from kubernetes import client, watch
 from google.auth import compute_engine
 from google.auth.transport.requests import Request
+from google.cloud import artifactregistry_v1
+from google.cloud.sql.connector import Connector
 from concurrent.futures import ThreadPoolExecutor
+import sqlalchemy
 import uuid
 import yaml
 
@@ -30,46 +31,69 @@ def create_matches(request):
     apps_v1 = client.AppsV1Api(api_client)
     core_v1 = client.CoreV1Api(api_client)
 
-    # Set up the BigQuery client
-    bigquery_client = bigquery.Client(project="pokerai-417521")
+    # Set up the Cloud SQL Connector
+    instance_connection_name = "pokerai-417521:us-east4:pokerai-sql"
+    db_user = "root"
+    db_pass = ".YFHUMhVJry#'SDt"
+    db_name = "pokerai-db"
 
-    # Query the teams table to get all teams
-    query = "SELECT githubUsername, elo FROM pokerai-417521.poker_dataset.teams"
-    query_job = bigquery_client.query(query)
-    teams = list(query_job.result())
+    with Connector() as connector:
 
-    # Sort teams by MMR
-    teams.sort(key=lambda x: x["elo"])
+        def getconn() -> sqlalchemy.engine.base.Connection:
+            conn = connector.connect(
+                instance_connection_name,
+                "pymysql",
+                user=db_user,
+                password=db_pass,
+                db=db_name,
+            )
+            return conn
+
+        pool = sqlalchemy.create_engine(
+            "mysql+pymysql://",
+            creator=getconn,
+        )
+
+        with pool.connect() as db_conn:
+            # Query the teams table to get all teams and their rolling winrate
+            query = sqlalchemy.text("""
+                SELECT t.githubUsername, 
+                    COALESCE(SUM(CASE WHEN m.team1Id = t.githubUsername AND m.team1Bankroll > m.team2Bankroll THEN 1 
+                                      WHEN m.team2Id = t.githubUsername AND m.team2Bankroll > m.team1Bankroll THEN 1 ELSE 0 END) / 
+                             NULLIF(COUNT(CASE WHEN m.team1Id = t.githubUsername OR m.team2Id = t.githubUsername THEN 1 END), 0), 0) AS rolling_winrate
+                FROM teams t
+                LEFT JOIN (
+                    SELECT *
+                    FROM matches
+                    ORDER BY timestamp DESC
+                    LIMIT 5
+                ) m ON t.githubUsername IN (m.team1Id, m.team2Id)
+                GROUP BY t.githubUsername
+            """)
+            teams = db_conn.execute(query).fetchall()
+
+    # Filter out teams without valid images
+    teams_with_images = [
+        team for team in teams if team_has_image(team["githubUsername"])
+    ]
+
+    # Sort teams by rolling winrate in descending order
+    teams_with_images.sort(key=lambda x: x["rolling_winrate"], reverse=True)
 
     # Prepare for matchmaking
-    matched_teams = set()
     team_pairs = []
 
-    for i, team in enumerate(teams):
-        if team["githubUsername"] not in matched_teams:
-            # Find up to the next three teams in the list that haven't been matched yet
-            potential_opponents = [
-                teams[j]
-                for j in range(i + 1, min(i + 4, len(teams)))
-                if teams[j]["githubUsername"] not in matched_teams
-            ]
-            if potential_opponents:
-                # Randomly select an opponent from the potential matches
-                opponent = random.choice(potential_opponents)
-                team_pairs.append((team["githubUsername"], opponent["githubUsername"]))
-                # Mark both teams as matched
-                matched_teams.update(
-                    [team["githubUsername"], opponent["githubUsername"]]
-                )
-            else:
-                # If no potential opponents are available (likely at the end of the list), match with any unmatched team
-                remaining_teams = [
-                    t for t in teams if t["githubUsername"] not in matched_teams
-                ]
-                if remaining_teams:
-                    opponentName = random.choice(list(matched_teams))
-                    team_pairs.append((team["githubUsername"], opponentName))
-                    matched_teams.update([team["githubUsername"]])
+    # Pair teams with the closest rolling winrate
+    for i in range(0, len(teams_with_images) - 1, 2):
+        team1 = teams_with_images[i]["githubUsername"]
+        team2 = teams_with_images[i + 1]["githubUsername"]
+        team_pairs.append((team1, team2))
+
+    # If there is an odd number of teams, pair the last team with the second to last team
+    if len(teams_with_images) % 2 != 0:
+        team1 = teams_with_images[-1]["githubUsername"]
+        team2 = teams_with_images[-2]["githubUsername"]
+        team_pairs.append((team1, team2))
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
@@ -81,7 +105,6 @@ def create_matches(request):
                 team2,
                 apps_v1,
                 core_v1,
-                bigquery_client,
                 api_client,
             )
             for team1, team2 in team_pairs
@@ -94,7 +117,23 @@ def create_matches(request):
     return {"message": "Matches created successfully"}
 
 
-def create_match(team1, team2, apps_v1, core_v1, bigquery_client, api_client):
+def team_has_image(team_name):
+    client = artifactregistry_v1.ArtifactRegistryClient()
+    repository = f"projects/pokerai-417521/locations/us-east4/repositories/{team_name}"
+    image_name = "pokerbot"
+    tag = "latest"
+
+    try:
+        client.get_tag(
+            request={"name": f"{repository}/packages/{image_name}/tags/{tag}"}
+        )
+        return True
+    except Exception as e:
+        print(f"Team {team_name} does not have a valid image: {str(e)}")
+        return False
+
+
+def create_match(team1, team2, apps_v1, core_v1, api_client):
     # Generate a unique match_id using a combination of team names and current timestamp
     match_id = f"{team1}-{team2}-{int(time.time())}"
 
@@ -126,22 +165,6 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client, api_client):
         if job.status.succeeded or job.status.failed:
             w.stop()
             break
-
-    # Retrieve the match result from BigQuery
-    match_result_query = f"SELECT team1Bankroll, team2Bankroll FROM pokerai-417521.poker_dataset.matches WHERE matchId = '{match_id}'"
-    match_result_job = bigquery_client.query(match_result_query)
-    match_result = list(match_result_job.result())
-
-    # Determine the winner based on the bankroll
-    team1_bankroll = match_result[0]["team1Bankroll"]
-    team2_bankroll = match_result[0]["team2Bankroll"]
-    if team1_bankroll > team2_bankroll:
-        winner = team1
-    else:
-        winner = team2
-
-    # Update the MMR of the teams based on the match result
-    update_mmr(team1, team2, winner, bigquery_client)
 
     # Delete the bot Deployments and Services
     apps_v1.delete_namespaced_deployment(
@@ -193,41 +216,3 @@ def create_game_engine_job(team1, team2, match_id, bot1_uuid, bot2_uuid):
     )
     job = yaml.safe_load(job_yaml)
     return job
-
-
-def update_mmr(team1, team2, winner, bigquery_client):
-    # Retrieve the current MMR of the teams
-    mmr_query = f"SELECT githubUsername, elo FROM pokerai-417521.poker_dataset.teams WHERE githubUsername IN ('{team1}', '{team2}')"
-    mmr_job = bigquery_client.query(mmr_query)
-    mmr_results = list(mmr_job.result())
-
-    team1_mmr = [r["elo"] for r in mmr_results if r["githubUsername"] == team1][0]
-    team2_mmr = [r["elo"] for r in mmr_results if r["githubUsername"] == team2][0]
-
-    # Calculate the expected scores using the Elo rating formula
-    team1_expected = 1 / (1 + 10 ** ((team2_mmr - team1_mmr) / 400))
-    team2_expected = 1 / (1 + 10 ** ((team1_mmr - team2_mmr) / 400))
-
-    # Determine the actual scores based on the match result
-    if winner == team1:
-        team1_actual = 1
-        team2_actual = 0
-    else:
-        team1_actual = 0
-        team2_actual = 1
-
-    # Calculate the updated MMR using the Elo rating formula
-    k_factor = 32  # Adjust the K-factor as needed
-    team1_updated_mmr = int(team1_mmr + k_factor * (team1_actual - team1_expected))
-    team2_updated_mmr = int(team2_mmr + k_factor * (team2_actual - team2_expected))
-
-    # Update the MMR in the BigQuery table
-    update_query = f"""
-        UPDATE pokerai-417521.poker_dataset.teams
-        SET elo = CASE
-            WHEN githubUsername = '{team1}' THEN {team1_updated_mmr}
-            WHEN githubUsername = '{team2}' THEN {team2_updated_mmr}
-        END
-        WHERE githubUsername IN ('{team1}', '{team2}')
-    """
-    bigquery_client.query(update_query).result()
