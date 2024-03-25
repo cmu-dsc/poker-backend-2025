@@ -42,7 +42,7 @@ spec:
         volumeMounts:
         - name: logs
           mountPath: /usr/src/app/logs
-      restartPolicy: Never
+      restartPolicy: OnFailure
       volumes:
       - name: logs
         emptyDir: {}

@@ -55,20 +55,28 @@ def create_matches(request):
         )
 
         with pool.connect() as db_conn:
-            # Query the teams table to get all teams and their rolling winrate
+            # Query the TeamDao table to get all teams and their rolling winrate
             query = sqlalchemy.text("""
                 SELECT t.githubUsername, 
-                    COALESCE(SUM(CASE WHEN m.team1Id = t.githubUsername AND m.team1Bankroll > m.team2Bankroll THEN 1 
-                                      WHEN m.team2Id = t.githubUsername AND m.team2Bankroll > m.team1Bankroll THEN 1 ELSE 0 END) / 
-                             NULLIF(COUNT(CASE WHEN m.team1Id = t.githubUsername OR m.team2Id = t.githubUsername THEN 1 END), 0), 0) AS rolling_winrate
-                FROM teams t
+                    COALESCE(SUM(CASE WHEN tm.teamId = t.githubUsername AND tm.bankroll > (
+                                        SELECT tm2.bankroll
+                                        FROM TeamMatchDao tm2
+                                        WHERE tm2.matchId = tm.matchId AND tm2.teamId <> t.githubUsername
+                                    ) THEN 1 ELSE 0 END) / 
+                            NULLIF(COUNT(tm.id), 0), 0) AS rolling_winrate
+                FROM TeamDao t
                 LEFT JOIN (
                     SELECT *
-                    FROM matches
-                    ORDER BY timestamp DESC
-                    LIMIT 5
-                ) m ON t.githubUsername IN (m.team1Id, m.team2Id)
+                    FROM TeamMatchDao
+                    WHERE matchId IN (
+                        SELECT matchId
+                        FROM MatchDao
+                        ORDER BY timestamp DESC
+                        LIMIT 5
+                    )
+                ) tm ON t.githubUsername = tm.teamId
                 GROUP BY t.githubUsername
+                ORDER BY rolling_winrate DESC
             """)
             teams = db_conn.execute(query).fetchall()
 
@@ -76,9 +84,6 @@ def create_matches(request):
     teams_with_images = [
         team for team in teams if team_has_image(team["githubUsername"])
     ]
-
-    # Sort teams by rolling winrate in descending order
-    teams_with_images.sort(key=lambda x: x["rolling_winrate"], reverse=True)
 
     # Prepare for matchmaking
     team_pairs = []
