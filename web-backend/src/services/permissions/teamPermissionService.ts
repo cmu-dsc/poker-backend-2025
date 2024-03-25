@@ -22,8 +22,6 @@ export const checkAndrewIdPartOfTeamDto = async (
   team: TeamDao & { members?: string[] },
 ): Promise<boolean> => {
   const user: UserDao = await getUserByAndrewId(andrewId)
-  console.log(user)
-  console.log(team)
   if (user.andrewId && team.members?.includes(user.andrewId)) {
     return true
   }
