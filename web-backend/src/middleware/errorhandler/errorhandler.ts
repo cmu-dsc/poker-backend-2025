@@ -15,22 +15,21 @@ const INTERNAL_SERVER_ERROR_STR = 'Internal Server Error'
  * @param next - The next function.
  */
 const errorHandler = (
-    error: ApiError, // Update the type of the error parameter
-    req: Request,
-    res: Response,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    next: NextFunction,
+  error: ApiError, // Update the type of the error parameter
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction,
 ) => {
-    let status: number
-    status = error?.status || ApiErrorCodes.INTERNAL_SERVER_ERROR
-    let message = error?.message || INTERNAL_SERVER_ERROR_STR
+  const status: number = error?.status || ApiErrorCodes.INTERNAL_SERVER_ERROR
+  let message = error?.message || INTERNAL_SERVER_ERROR_STR
 
-    if (status === ApiErrorCodes.INTERNAL_SERVER_ERROR) {
-        logger.error(error)
-        message = INTERNAL_SERVER_ERROR_STR
-    }
-    res.status(status).send({
-        message,
-    })
+  if (status === ApiErrorCodes.INTERNAL_SERVER_ERROR) {
+    logger.error(error)
+    message = INTERNAL_SERVER_ERROR_STR
+  }
+  res.status(status).send({
+    message,
+  })
 }
 export default errorHandler

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import admin from 'firebase-admin'
 import env from 'src/config/env'
-import { ApiError, ApiErrorCodes } from '../errorhandler/APIError'
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -10,7 +9,7 @@ admin.initializeApp({
 })
 
 // Middleware function to validate Firebase auth header
-export const firebaseAuthMiddleware = async (
+const firebaseAuthMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -39,24 +38,28 @@ export const firebaseAuthMiddleware = async (
     }
 
     // Attach the decoded token to the request object for further use
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     req.decodedToken = decodedToken
 
     // Validate that the Google account email ends with 'cmu.edu'
-    const email: string | undefined = decodedToken.email
+    const { email } = decodedToken
     if (!email || !email.endsWith('cmu.edu')) {
       res.status(401).send('Invalid email domain')
       return
     }
 
     // attach users andrew id to the request object
+    const [andrewId] = email.split('@')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    req.andrewId = email.split('@')[0]
+    req.andrewId = andrewId
 
     // Call the next middleware or route handler
     next()
   } catch (error) {
     res.status(401).send('Invalid auth token')
-    return
   }
 }
+
+export default firebaseAuthMiddleware

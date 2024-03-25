@@ -6,7 +6,7 @@ export const ENGINE_LOG = 'engine_log.csv'
 export const BOT_LOG = 'debug_log.txt'
 
 const getMatchId = (match: MatchDto): string => {
-  return (match.matchId)
+  return match.matchId
 }
 
 /**

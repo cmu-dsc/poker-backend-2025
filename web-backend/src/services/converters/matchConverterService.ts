@@ -1,6 +1,6 @@
-import { MatchDto } from "@api/generated"
+import { MatchDto } from '@api/generated'
 
-export const convertRowToMatchDto = (row: any): MatchDto => {
+const convertRowToMatchDto = (row: any): MatchDto => {
   return {
     matchId: row.matchId,
     team1Id: row.team1Name,
@@ -10,3 +10,5 @@ export const convertRowToMatchDto = (row: any): MatchDto => {
     timestamp: row.timestamp.value,
   }
 }
+
+export default convertRowToMatchDto

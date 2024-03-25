@@ -2,13 +2,13 @@ import express, { Request, Response } from 'express'
 import swaggerUi from 'swagger-ui-express'
 import YAML from 'yamljs'
 import cors from 'cors'
+import { HelloWorldResponseDto } from '@api/generated'
 import errorHandler from './middleware/errorhandler/errorhandler'
 import { requestLogger } from './middleware/logger/httplogger'
-import { HelloWorldResponseDto } from '@api/generated'
 import matchRouter from './routes/matchRouter'
 import teamRouter from './routes/teamRouter'
 import userRouter from './routes/userRouter'
-import { firebaseAuthMiddleware } from './middleware/auth/firebaseAuth'
+import firebaseAuthMiddleware from './middleware/auth/firebaseAuth'
 
 const app = express()
 
@@ -33,7 +33,6 @@ app.use('/user', [userRouter()])
 app.use('/team', [teamRouter()])
 
 app.use('/match', [matchRouter()])
-
 
 app.use(errorHandler)
 

@@ -6,13 +6,15 @@ import { getUsersByTeamId } from '../userService'
  * @param {any} row the row to convert
  * @returns {TeamDto} the converted team
  */
-export const convertRowToTeamDto = async (row: any): Promise<TeamDto> => {
+const convertRowToTeamDto = async (row: any): Promise<TeamDto> => {
   const members: string[] = (await getUsersByTeamId(row.githubUsername))
     .map(user => user.andrewId)
     .filter(andrewId => andrewId) as string[]
   return {
     githubUsername: row.githubUsername,
     elo: row.elo,
-    members: members,
+    members,
   }
 }
+
+export default convertRowToTeamDto

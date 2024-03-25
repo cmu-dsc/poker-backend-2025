@@ -1,6 +1,6 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
-import { createServiceAccountAndResources } from 'src/services/serviceAccountService'
+import createServiceAccountAndResources from 'src/services/serviceAccountService'
 import { checkAndrewIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
 import {
   createTeam,

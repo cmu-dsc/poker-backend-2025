@@ -10,7 +10,7 @@ const userRouter = () => {
 
   router.get('/me', asyncWrapper(getUserMe))
   router.post('/team/leave', asyncWrapper(postUserTeamLeave))
-  
+
   return router
 }
 

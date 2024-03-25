@@ -2,8 +2,8 @@ import { UserDto } from '@api/generated'
 import { Query, SimpleQueryRowsResponse } from '@google-cloud/bigquery'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { bigqueryClient } from 'src/server'
-import { convertRowToUserDto } from './converters/userConverterService'
 import { DATASET_ID, USER_TABLE } from 'src/config/db'
+import convertRowToUserDto from './converters/userConverterService'
 
 const GET_BY_ANDREWID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${USER_TABLE}\` WHERE andrewId = @andrewId LIMIT 1`
 const GET_USER_BY_TEAM_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${USER_TABLE}\` WHERE teamId = @teamId`
@@ -16,7 +16,10 @@ const INSERT_USER_QUERY: string = `INSERT INTO \`${DATASET_ID}.${USER_TABLE}\` (
  * @param {boolean} force whether to overwrite potential errors
  * @returns {UserDto} the corresponding user
  */
-export const getUserByAndrewId = async (andrewId: string, force = false): Promise<UserDto> => {
+export const getUserByAndrewId = async (
+  andrewId: string,
+  force = false,
+): Promise<UserDto> => {
   const query: Query = {
     query: GET_BY_ANDREWID_QUERY,
     location: 'US',
@@ -28,7 +31,8 @@ export const getUserByAndrewId = async (andrewId: string, force = false): Promis
   const userRow = queryResult[0][0]
   if (!userRow && !force) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'User not found')
-  } if (!userRow && force) {
+  }
+  if (!userRow && force) {
     const insertQuery: Query = {
       query: INSERT_USER_QUERY,
       location: 'US',

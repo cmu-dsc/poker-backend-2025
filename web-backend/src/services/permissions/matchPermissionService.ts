@@ -1,9 +1,9 @@
 import { MatchDto, UserDto } from '@api/generated'
+import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { getUserByAndrewId } from '../userService'
 import { getMatchById } from '../matchService'
-import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 
-export const checkAndrewIdPermissionsForMatch = async (
+const checkAndrewIdPermissionsForMatch = async (
   andrewId: string,
   matchId: string,
 ): Promise<boolean> => {
@@ -12,10 +12,11 @@ export const checkAndrewIdPermissionsForMatch = async (
 
   if (user.teamId === match.team1Id || user.teamId === match.team2Id) {
     return true
-  } else {
-    throw new ApiError(
-      ApiErrorCodes.FORBIDDEN,
-      'User does not have permission to access this match',
-    )
   }
+  throw new ApiError(
+    ApiErrorCodes.FORBIDDEN,
+    'User does not have permission to access this match',
+  )
 }
+
+export default checkAndrewIdPermissionsForMatch

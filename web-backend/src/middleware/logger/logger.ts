@@ -12,7 +12,7 @@ winston.addColors({
  * The logger used for logging.
  * @see {@link https://www.npmjs.com/package/winston}
  */
-export const logger = winston.createLogger({
+const logger = winston.createLogger({
   level: 'http',
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),

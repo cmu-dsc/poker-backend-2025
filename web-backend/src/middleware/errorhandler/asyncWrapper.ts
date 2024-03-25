@@ -8,7 +8,7 @@ import { Response, Request, NextFunction } from 'express'
  */
 const asyncWrapper = (
   fn: (
-    req: Request | Request & { andrewId: string},
+    req: Request | (Request & { andrewId: string }),
     res: Response<any>,
     next: NextFunction,
   ) => Promise<any>,

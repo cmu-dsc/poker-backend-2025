@@ -58,9 +58,8 @@ export const validateLimit = (limit: number): number => {
   try {
     if (limit) {
       return limitValidator.parse(Number(limit))
-    } else {
-      return 10
     }
+    return 10
   } catch (error) {
     throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
   }
@@ -76,9 +75,8 @@ export const validateOffset = (offset: number): number => {
   try {
     if (offset) {
       return offsetValidator.parse(Number(offset))
-    } else {
-      return 0
     }
+    return 0
   } catch (error) {
     throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
   }
@@ -94,9 +92,8 @@ export const validateSortBy = (sortBy: string): string => {
   try {
     if (sortBy) {
       return sortByValidator.parse(sortBy)
-    } else {
-      return 'timestamp'
     }
+    return 'timestamp'
   } catch (error) {
     throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
   }
@@ -112,9 +109,8 @@ export const validateOrder = (order: string): 'asc' | 'desc' => {
   try {
     if (order) {
       return orderValidator.parse(order) as 'asc' | 'desc'
-    } else {
-      return 'desc'
     }
+    return 'desc'
   } catch (error) {
     throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
   }

@@ -9,13 +9,13 @@ Install all dependencies:
 
 ```bash
 cd web-backend
-yarn install
+pnpm install
 ```
 
 Run the server in dev mode:
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 The server will be running on `http://localhost:<PORT FROM ENV>`.
@@ -25,7 +25,7 @@ API specification can be found at `http://localhost:<PORT FROM ENV>/api-spec`.
 To build the server:
 
 ```bash
-yarn build
+pnpm build
 ```
 
 ### Project Structure
@@ -48,7 +48,7 @@ yarn build
     │   ├── server.ts       # Server entry point
     │   └── services        # Business logic
     ├── tsconfig.json
-    └── yarn.lock
+    └── pnpm-lock.yaml
 ```
 
 ### Environment Variables

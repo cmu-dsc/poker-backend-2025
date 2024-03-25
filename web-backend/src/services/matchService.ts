@@ -3,12 +3,12 @@ import { Query, SimpleQueryRowsResponse } from '@google-cloud/bigquery'
 import { DATASET_ID, MATCH_TABLE } from 'src/config/db'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { bigqueryClient, storageClient } from 'src/server'
-import { convertRowToMatchDto } from './converters/matchConverterService'
 import {
   BUCKET_NAME,
   getBotLogPathTeam,
   getEngineLogPath,
 } from 'src/config/bucket'
+import convertRowToMatchDto from './converters/matchConverterService'
 
 const GET_BY_MATCH_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE matchId = @matchId LIMIT 1`
 const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY timestamp desc`

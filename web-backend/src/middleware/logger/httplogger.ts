@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { logger } from './logger'
+import logger from './logger'
 
 /**
  * Logs the request and response to the console. Slow requests are logged as warnings. Failed requests are logged as errors.

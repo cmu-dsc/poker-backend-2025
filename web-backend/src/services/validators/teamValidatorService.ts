@@ -10,7 +10,6 @@ const teamNameValidator = z
   .min(1)
   .regex(/^[a-zA-Z0-9-]+$/)
 
-  
 /**
  * A validator for the team dto
  */

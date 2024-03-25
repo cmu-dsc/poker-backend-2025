@@ -6,16 +6,10 @@ import {
   getEngineLog,
   getMatchesByTeamId,
 } from 'src/services/matchService'
-import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
+import checkAndrewIdPermissionsForMatch from 'src/services/permissions/matchPermissionService'
 import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
 import { getUserByAndrewId } from 'src/services/userService'
-import {
-  validateLimit,
-  validateMatchId,
-  validateOffset,
-  validateOrder,
-  validateSortBy,
-} from 'src/services/validators/matchValidatorService'
+import { validateMatchId } from 'src/services/validators/matchValidatorService'
 import { validateTeamName } from 'src/services/validators/teamValidatorService'
 
 /**
@@ -32,7 +26,7 @@ export const getMatchTeamByGithubUsername = async (
   await checkUserIdPermissionsForTeamGithubName(req.andrewId!, githubName)
 
   const matches: MatchDto[] = await getMatchesByTeamId(githubName)
-  
+
   res.status(200).json(matches)
 }
 
