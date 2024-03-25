@@ -2,11 +2,12 @@ import time
 import functions_framework
 import random
 from google.cloud import bigquery
-from kubernetes import client, config
+from kubernetes import client, watch
 from google.auth import compute_engine
 from google.auth.transport.requests import Request
 from concurrent.futures import ThreadPoolExecutor
 import uuid
+import yaml
 
 
 @functions_framework.http
@@ -57,7 +58,9 @@ def create_matches(request):
                 opponent = random.choice(potential_opponents)
                 team_pairs.append((team["githubUsername"], opponent["githubUsername"]))
                 # Mark both teams as matched
-                matched_teams.update([team["githubUsername"], opponent["githubUsername"]]) 
+                matched_teams.update(
+                    [team["githubUsername"], opponent["githubUsername"]]
+                )
             else:
                 # If no potential opponents are available (likely at the end of the list), match with any unmatched team
                 remaining_teams = [
@@ -66,14 +69,20 @@ def create_matches(request):
                 if remaining_teams:
                     opponentName = random.choice(list(matched_teams))
                     team_pairs.append((team["githubUsername"], opponentName))
-                    matched_teams.update([team["githubUsername"]]) 
+                    matched_teams.update([team["githubUsername"]])
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
         # Submit match tasks to the executor
         match_futures = [
             executor.submit(
-                create_match, team1, team2, apps_v1, core_v1, bigquery_client
+                create_match,
+                team1,
+                team2,
+                apps_v1,
+                core_v1,
+                bigquery_client,
+                api_client,
             )
             for team1, team2 in team_pairs
         ]
@@ -85,7 +94,7 @@ def create_matches(request):
     return {"message": "Matches created successfully"}
 
 
-def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
+def create_match(team1, team2, apps_v1, core_v1, bigquery_client, api_client):
     # Generate a unique match_id using a combination of team names and current timestamp
     match_id = f"{team1}-{team2}-{int(time.time())}"
 
@@ -97,25 +106,27 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.create_namespaced_service(namespace="default", body=bot1_service)
     core_v1.create_namespaced_service(namespace="default", body=bot2_service)
 
-    # Create the game engine Deployment
-    game_engine_deployment = create_game_engine_deployment(
+    # Create the game engine Job
+    game_engine_job = create_game_engine_job(
         team1, team2, match_id, bot1_uuid, bot2_uuid
     )
-    apps_v1.create_namespaced_deployment(
-        namespace="default", body=game_engine_deployment
-    )
+    batch_v1 = client.BatchV1Api(api_client)
+    batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
 
-    time.sleep(60)
-    # Wait for the game engine to finish running
-    while True:
-        game_engine_status = apps_v1.read_namespaced_deployment_status(
-            name=f"engine-{match_id}", namespace="default"
-        ).status
-        if game_engine_status.replicas == game_engine_status.available_replicas:
+    print("CREATED job")
+
+    # Watch for the game engine job status
+    w = watch.Watch()
+    for event in w.stream(
+        batch_v1.list_namespaced_job,
+        namespace="default",
+        field_selector=f"metadata.name=engine-{match_id}",
+    ):
+        job = event["object"]
+        if job.status.succeeded or job.status.failed:
+            w.stop()
             break
-        time.sleep(30)  # Wait for 30 seconds before checking again
 
-    time.sleep(5)
     # Retrieve the match result from BigQuery
     match_result_query = f"SELECT team1Bankroll, team2Bankroll FROM pokerai-417521.poker_dataset.matches WHERE matchId = '{match_id}'"
     match_result_job = bigquery_client.query(match_result_query)
@@ -145,109 +156,43 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.delete_namespaced_service(
         name=f"{team2}-bot-service-{bot2_uuid}", namespace="default"
     )
-    apps_v1.delete_namespaced_deployment(
-        name=f"engine-{match_id}", namespace="default"
-    )
+    batch_v1.delete_namespaced_job(name=f"engine-{match_id}", namespace="default")
 
 
 def create_bot_resources(team_name):
     # Generate a unique UUID for the bot resources
     bot_uuid = uuid.uuid4().hex[:8]
 
-    # Create the bot Deployment
-    deployment = client.V1Deployment(
-        metadata=client.V1ObjectMeta(name=f"{team_name}-bot-{bot_uuid}"),
-        spec=client.V1DeploymentSpec(
-            replicas=1,
-            selector=client.V1LabelSelector(
-                match_labels={"app": f"{team_name}-bot-{bot_uuid}"}
-            ),
-            template=client.V1PodTemplateSpec(
-                metadata=client.V1ObjectMeta(
-                    labels={"app": f"{team_name}-bot-{bot_uuid}"}
-                ),
-                spec=client.V1PodSpec(
-                    containers=[
-                        client.V1Container(
-                            name=f"{team_name}-bot",
-                            image=f"us-east4-docker.pkg.dev/pokerai-417521/{team_name}/pokerbot:latest",
-                            ports=[client.V1ContainerPort(container_port=50051)],
-                            resources=client.V1ResourceRequirements(
-                                limits={"cpu": "1", "memory": "1.8Gi"},
-                                requests={"cpu": "0.5", "memory": "1.8Gi"},
-                            ),
-                        )
-                    ],
-                ),
-            ),
-        ),
+    with open("bot_deployment.yaml") as f:
+        deployment_yaml = f.read()
+    deployment_yaml = deployment_yaml.replace("{{TEAM_NAME}}", team_name).replace(
+        "{{BOT_UUID}}", bot_uuid
     )
+    deployment = yaml.safe_load(deployment_yaml)
 
-    # Create the bot Service
-    service = client.V1Service(
-        metadata=client.V1ObjectMeta(name=f"{team_name}-bot-service-{bot_uuid}"),
-        spec=client.V1ServiceSpec(
-            selector={"app": f"{team_name}-bot-{bot_uuid}"},
-            ports=[client.V1ServicePort(port=50051)],
-        ),
+    with open("bot_service.yaml") as f:
+        service_yaml = f.read()
+    service_yaml = service_yaml.replace("{{TEAM_NAME}}", team_name).replace(
+        "{{BOT_UUID}}", bot_uuid
     )
+    service = yaml.safe_load(service_yaml)
 
     return deployment, service, bot_uuid
 
 
-def create_game_engine_deployment(team1, team2, match_id, bot1_uuid, bot2_uuid):
-    # Create the game engine Deployment spec
-    deployment = client.V1Deployment(
-        metadata=client.V1ObjectMeta(name=f"engine-{match_id}"),
-        spec=client.V1DeploymentSpec(
-            replicas=1,
-            selector=client.V1LabelSelector(
-                match_labels={"app": f"engine-{match_id}"}
-            ),
-            template=client.V1PodTemplateSpec(
-                metadata=client.V1ObjectMeta(labels={"app": f"engine-{match_id}"}),
-                spec=client.V1PodSpec(
-                    containers=[
-                        client.V1Container(
-                            name="engine",
-                            image="us-east4-docker.pkg.dev/pokerai-417521/cmu-dsc/engine:latest",
-                            env=[
-                                client.V1EnvVar(name="PLAYER_1_NAME", value=team1),
-                                client.V1EnvVar(name="PLAYER_2_NAME", value=team2),
-                                client.V1EnvVar(
-                                    name="PLAYER_1_DNS",
-                                    value=f"{team1}-bot-service-{bot1_uuid}:50051",
-                                ),
-                                client.V1EnvVar(
-                                    name="PLAYER_2_DNS",
-                                    value=f"{team2}-bot-service-{bot2_uuid}:50051",
-                                ),
-                                client.V1EnvVar(name="MATCH_ID", value=str(match_id)),
-                                client.V1EnvVar(
-                                    name="BUCKET_NAME", value="poker-ai-blobs"
-                                ),
-                                client.V1EnvVar(
-                                    name="DATASET_ID",
-                                    value="pokerai-417521.poker_dataset",
-                                ),
-                            ],
-                            volume_mounts=[
-                                client.V1VolumeMount(
-                                    name="logs", mount_path="/usr/src/app/logs"
-                                ),
-                            ],
-                        )
-                    ],
-                    volumes=[
-                        client.V1Volume(
-                            name="logs", empty_dir=client.V1EmptyDirVolumeSource()
-                        ),
-                    ],
-                ),
-            ),
-        ),
+def create_game_engine_job(team1, team2, match_id, bot1_uuid, bot2_uuid):
+    with open("engine_job.yaml") as f:
+        job_yaml = f.read()
+    job_yaml = (
+        job_yaml.replace("{{TEAM1}}", team1)
+        .replace("{{TEAM2}}", team2)
+        .replace("{{MATCH_ID}}", match_id)
     )
-    return deployment
+    job_yaml = job_yaml.replace("{{BOT1_UUID}}", bot1_uuid).replace(
+        "{{BOT2_UUID}}", bot2_uuid
+    )
+    job = yaml.safe_load(job_yaml)
+    return job
 
 
 def update_mmr(team1, team2, winner, bigquery_client):
