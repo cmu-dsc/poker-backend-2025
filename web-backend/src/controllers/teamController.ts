@@ -12,6 +12,11 @@ import {
   validateTeam,
   validateTeamName,
 } from 'src/services/validators/teamValidatorService'
+import { TeamDao } from '@prisma/client'
+import {
+  convertTeamDaoToDto,
+  convertTeamDaoWithStatsToDto,
+} from 'src/services/converters/teamConverterService'
 
 /**
  * Create a new team
@@ -25,12 +30,10 @@ export const postTeam = async (
   const team: TeamDto = validateTeam(req.body)
 
   await checkAndrewIdPartOfTeam(req.andrewId!, team)
+  const createdTeam: TeamDao = await createTeam(team)
+  const teamDto = convertTeamDaoToDto(createdTeam)
 
-  const createdTeam: TeamDto = await createTeam(team)
-
-  await createServiceAccountAndResources(team.githubUsername)
-
-  res.status(201).json(createdTeam)
+  res.status(201).json(teamDto)
 }
 
 /**
@@ -44,9 +47,11 @@ export const getTeamByGithubUsername = async (
 ) => {
   const githubName: string = validateTeamName(req.params.githubUsername)
 
-  const team: TeamDto = await getTeamById(githubName)
+  const team: TeamDao = await getTeamById(githubName)
 
-  res.status(200).json(team)
+  const teamDto = await convertTeamDaoWithStatsToDto(team)
+
+  res.status(200).json(teamDto)
 }
 
 /**
@@ -64,10 +69,11 @@ export const putTeamByGithubUsername = async (
   team.githubUsername = githubName
   await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
-  const updatedTeam: TeamDto = await updateTeamByGithubUsername(
+  const updatedTeamDao: TeamDao = await updateTeamByGithubUsername(
     githubName,
     team,
   )
+  const updatedTeam = convertTeamDaoToDto(updatedTeamDao)
 
   res.status(200).json(updatedTeam)
 }
@@ -83,7 +89,7 @@ export const deleteTeamByGithubUsername = async (
 ) => {
   const githubName: string = validateTeamName(req.params.githubUsername)
 
-  const team: TeamDto = await getTeamById(githubName)
+  const team: TeamDao = await getTeamById(githubName)
   await checkAndrewIdPartOfTeam(req.andrewId!, team)
 
   await deleteTeam(githubName)

@@ -1,5 +1,7 @@
 import { UserDto } from '@api/generated'
+import { UserDao } from '@prisma/client'
 import { Request, Response } from 'express'
+import { convertUserDaoToDto } from 'src/services/converters/userConverterService'
 import { getUserByAndrewId, leaveTeam } from 'src/services/userService'
 
 /**
@@ -11,9 +13,10 @@ export const getUserMe = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<UserDto>,
 ) => {
-  const user: UserDto = await getUserByAndrewId(req.andrewId!)
+  const user: UserDao = await getUserByAndrewId(req.andrewId!)
+  const userDto: UserDto = convertUserDaoToDto(user)
 
-  res.status(200).json(user)
+  res.status(200).json(userDto)
 }
 
 /**

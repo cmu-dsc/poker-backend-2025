@@ -14,19 +14,19 @@ datasource db {
 }
 
 model UserDao {
-  andrewId              String   @id
+  andrewId              String   @id @unique
   TeamDao               TeamDao? @relation(fields: [teamDaoGithubUsername], references: [githubUsername])
   teamDaoGithubUsername String?
 }
 
 model TeamDao {
-  githubUsername String         @id
+  githubUsername String         @id @unique
   members        UserDao[]
   TeamMatchDao   TeamMatchDao[]
 }
 
 model TeamMatchDao {
-  id       Int      @id @default(autoincrement())
+  id       Int      @id @default(autoincrement()) @unique
   match    MatchDao @relation(fields: [matchId], references: [matchId])
   matchId  String
   team     TeamDao  @relation(fields: [teamId], references: [githubUsername])
@@ -35,7 +35,7 @@ model TeamMatchDao {
 }
 
 model MatchDao {
-  matchId       String         @id
+  matchId       String         @id @unique
   timestamp     DateTime       @default(now())
   teamMatchDaos TeamMatchDao[]
 }

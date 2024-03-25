@@ -1,37 +1,34 @@
 import { MatchDto } from '@api/generated'
-import { Query, SimpleQueryRowsResponse } from '@google-cloud/bigquery'
-import { DATASET_ID, MATCH_TABLE } from 'src/config/db'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
-import { bigqueryClient, storageClient } from 'src/server'
 import {
   BUCKET_NAME,
   getBotLogPathTeam,
   getEngineLogPath,
 } from 'src/config/bucket'
-import convertRowToMatchDto from './converters/matchConverterService'
-
-const GET_BY_MATCH_ID_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE matchId = @matchId LIMIT 1`
-const GET_ALL_FILTERED_MATCH_QUERY: string = `SELECT * FROM \`${DATASET_ID}.${MATCH_TABLE}\` WHERE team1Name = @teamId OR team2Name = @teamId ORDER BY timestamp desc`
+import { MatchDao } from '@prisma/client'
+import { dbClient, storageClient } from 'src/server'
+import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
 
 /**
  * Retrieve a match from the database by matchId
  * @param {string} matchId the id of the match
- * @returns {Promise<MatchDto>} the corresponding match
+ * @returns {Promise<MatchDao>} the corresponding match
  */
-export const getMatchById = async (matchId: string): Promise<MatchDto> => {
-  const query: Query = {
-    query: GET_BY_MATCH_ID_QUERY,
-    location: 'US',
-    params: { matchId },
-  }
+export const getMatchById = async (matchId: string): Promise<MatchDao> => {
+  const match: MatchDao | null = await dbClient.matchDao.findUnique({
+    where: {
+      matchId,
+    },
+    include: {
+      teamMatchDaos: true,
+    },
+  })
 
-  const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
-
-  const matchRow = queryResult[0][0]
-  if (!matchRow) {
+  if (!match) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Match not found')
   }
-  return convertRowToMatchDto(matchRow)
+
+  return match
 }
 
 /**
@@ -40,16 +37,22 @@ export const getMatchById = async (matchId: string): Promise<MatchDto> => {
  * @returns {Promise<MatchDto[]>} all matches
  */
 export const getMatchesByTeamId = async (
-  teamId: string,
+  githubUsername: string,
 ): Promise<MatchDto[]> => {
-  const query: Query = {
-    query: GET_ALL_FILTERED_MATCH_QUERY,
-    location: 'US',
-    params: { teamId },
-  }
+  const matches: MatchDao[] = await dbClient.matchDao.findMany({
+    where: {
+      teamMatchDaos: {
+        some: {
+          teamId: githubUsername,
+        },
+      },
+    },
+    include: {
+      teamMatchDaos: true,
+    },
+  })
 
-  const queryResult: SimpleQueryRowsResponse = await bigqueryClient.query(query)
-  return queryResult[0].map(convertRowToMatchDto)
+  return matches.map(convertMatchDaoWithTeamMatchDaosToDto)
 }
 
 /**
@@ -58,7 +61,7 @@ export const getMatchesByTeamId = async (
  * @returns {Promise<string>} the engine logs
  */
 export const getEngineLog = async (matchId: string): Promise<string> => {
-  const match: MatchDto = await getMatchById(matchId)
+  const match: MatchDao = await getMatchById(matchId)
 
   try {
     const content: string = (
@@ -83,27 +86,13 @@ export const getBotLog = async (
   matchId: string,
   teamGithubUsername: string,
 ): Promise<string> => {
-  const match: MatchDto = await getMatchById(matchId)
-  let teamNo: 1 | 2 = 0 as 1 | 2
-  switch (teamGithubUsername) {
-    case match.team1Id:
-      teamNo = 1
-      break
-    case match.team2Id:
-      teamNo = 2
-      break
-    default:
-      throw new ApiError(
-        ApiErrorCodes.BUSINESS_LOGIC_ERROR,
-        'Team not found in match',
-      )
-  }
+  const match: MatchDao = await getMatchById(matchId)
 
   try {
     const content: string = (
       await storageClient
         .bucket(BUCKET_NAME)
-        .file(getBotLogPathTeam(match, teamNo))
+        .file(getBotLogPathTeam(match, teamGithubUsername))
         .download()
     ).toString()
 

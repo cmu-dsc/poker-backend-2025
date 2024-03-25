@@ -1,20 +1,77 @@
 import { TeamDto } from '@api/generated'
-import { getUsersByTeamId } from '../userService'
+import { PrismaClient, TeamDao } from '@prisma/client'
+import { dbClient } from 'src/server'
 
 /**
- * Convert a row to a team dto
- * @param {any} row the row to convert
- * @returns {TeamDto} the converted team
+ * Convert a team DAO to a team DTO
+ * @param teamDao
+ * @returns the team DTO
  */
-const convertRowToTeamDto = async (row: any): Promise<TeamDto> => {
-  const members: string[] = (await getUsersByTeamId(row.githubUsername))
-    .map(user => user.andrewId)
-    .filter(andrewId => andrewId) as string[]
+export const convertTeamDaoToDto = (
+  teamDao: TeamDao & { members?: { andrewId: string }[] },
+): TeamDto => {
   return {
-    githubUsername: row.githubUsername,
-    elo: row.elo,
-    members,
+    githubUsername: teamDao.githubUsername,
+    members: teamDao.members
+      ? teamDao.members.map((member: any) => member.andrewId)
+      : [],
   }
 }
 
-export default convertRowToTeamDto
+/**
+ * Return the team with the given github username including the number of wins and losses
+ * @param teamDao the team Dao to convert
+ * @returns the team DTO
+ */
+export const convertTeamDaoWithStatsToDto = async (
+  teamDao: TeamDao & { members?: { andrewId: string }[] },
+): Promise<TeamDto> => {
+  const teamMatches = await dbClient.teamMatchDao.findMany({
+    where: {
+      teamId: teamDao.githubUsername,
+    },
+    include: {
+      match: {
+        select: {
+          teamMatchDaos: true,
+          timestamp: true,
+        },
+      },
+    },
+  })
+
+  const wonMatches = teamMatches.filter(teamMatch => {
+    const teamMatchDaos = teamMatch.match.teamMatchDaos
+    if (
+      teamMatchDaos.length !== 2 &&
+      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+    ) {
+      return false
+    }
+    return teamMatchDaos[0].teamId === teamDao.githubUsername
+      ? teamMatchDaos[0].bankroll > teamMatchDaos[1].bankroll
+      : teamMatchDaos[1].bankroll > teamMatchDaos[0].bankroll
+  }).length
+
+  const lostMatches = teamMatches.filter(teamMatch => {
+    const teamMatchDaos = teamMatch.match.teamMatchDaos
+    if (
+      teamMatchDaos.length !== 2 &&
+      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+    ) {
+      return false
+    }
+    return teamMatchDaos[0].teamId === teamDao.githubUsername
+      ? teamMatchDaos[0].bankroll < teamMatchDaos[1].bankroll
+      : teamMatchDaos[1].bankroll < teamMatchDaos[0].bankroll
+  }).length
+
+  return {
+    githubUsername: teamDao.githubUsername,
+    members: teamDao.members
+      ? teamDao.members.map((member: any) => member.andrewId)
+      : [],
+    wins: wonMatches,
+    losses: lostMatches,
+  }
+}

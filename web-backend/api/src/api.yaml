@@ -51,6 +51,7 @@ paths:
           description: Unauthorized
         "404":
           description: Not Found
+
   /user/team/leave:
     post:
       tags:
@@ -277,9 +278,12 @@ components:
           items:
             type: string
             example: "acarnegie"
-        elo:
+        wins:
           type: number
-          example: 1000
+          example: 10
+        losses:
+          type: number
+          example: 2
       required:
         - githubUsername
         - members

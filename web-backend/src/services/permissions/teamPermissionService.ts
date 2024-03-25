@@ -1,6 +1,7 @@
 import { TeamDto, UserDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { getUserByAndrewId } from '../userService'
+import { TeamDao } from '@prisma/client'
 
 export const checkUserIdPermissionsForTeamGithubName = async (
   userId: string,
@@ -18,10 +19,10 @@ export const checkUserIdPermissionsForTeamGithubName = async (
 
 export const checkAndrewIdPartOfTeam = async (
   andrewId: string,
-  team: TeamDto,
+  team: TeamDao & { members?: string[] },
 ): Promise<boolean> => {
   const user: UserDto = await getUserByAndrewId(andrewId)
-  if (user.andrewId && team.members.includes(user.andrewId)) {
+  if (user.andrewId && team.members?.includes(user.andrewId)) {
     return true
   }
   throw new ApiError(
