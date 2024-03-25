@@ -1,14 +1,17 @@
 import { MatchDto } from '@api/generated'
 
-const convertRowToMatchDto = (row: any): MatchDto => {
+export const convertMatchDaoWithTeamMatchDaosToDto = (
+  matchDao: any): MatchDto => {
+  if (matchDao.teamMatchDaos === undefined || matchDao.teamMatchDaos.length !== 2) {
+    throw new Error('Invalid TeamMatchDaos in MatchDao')
+  }
+
   return {
-    matchId: row.matchId,
-    team1Id: row.team1Name,
-    team2Id: row.team2Name,
-    team1Score: row.team1Bankroll,
-    team2Score: row.team2Bankroll,
-    timestamp: row.timestamp.value,
+    matchId: matchDao.matchId,
+    timestamp: (matchDao.timestamp as Date).toISOString(),
+    team1Id: matchDao.teamMatchDaos[0].teamId,
+    team2Id: matchDao.teamMatchDaos[1].teamId,
+    team1Score: matchDao.teamMatchDaos[0].bankroll,
+    team2Score: matchDao.teamMatchDaos[1].bankroll,
   }
 }
-
-export default convertRowToMatchDto

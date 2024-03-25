@@ -6,7 +6,7 @@ import {
   getEngineLog,
   getMatchesByTeamId,
 } from 'src/services/matchService'
-import checkAndrewIdPermissionsForMatch from 'src/services/permissions/matchPermissionService'
+import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
 import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
 import { getUserByAndrewId } from 'src/services/userService'
 import { validateMatchId } from 'src/services/validators/matchValidatorService'

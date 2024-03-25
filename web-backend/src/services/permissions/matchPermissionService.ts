@@ -1,16 +1,20 @@
-import { MatchDto, UserDto } from '@api/generated'
+import { UserDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { getUserByAndrewId } from '../userService'
 import { getMatchById } from '../matchService'
+import { MatchDao } from '@prisma/client'
+import { convertMatchDaoWithTeamMatchDaosToDto } from '../converters/matchConverterService'
 
-const checkAndrewIdPermissionsForMatch = async (
+export const checkAndrewIdPermissionsForMatch = async (
   andrewId: string,
   matchId: string,
 ): Promise<boolean> => {
   const user: UserDto = await getUserByAndrewId(andrewId)
-  const match: MatchDto = await getMatchById(matchId)
+  const match: MatchDao = await getMatchById(matchId)
 
-  if (user.teamId === match.team1Id || user.teamId === match.team2Id) {
+  const matchDto = convertMatchDaoWithTeamMatchDaosToDto(match)
+
+  if (user.teamId === matchDto.team1Id || user.teamId === matchDto.team2Id) {
     return true
   }
   throw new ApiError(
@@ -18,5 +22,3 @@ const checkAndrewIdPermissionsForMatch = async (
     'User does not have permission to access this match',
   )
 }
-
-export default checkAndrewIdPermissionsForMatch

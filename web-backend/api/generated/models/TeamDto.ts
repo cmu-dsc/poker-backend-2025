@@ -5,6 +5,7 @@
 export type TeamDto = {
     githubUsername: string;
     members: Array<string>;
-    elo?: number;
+    wins?: number;
+    losses?: number;
 };
 

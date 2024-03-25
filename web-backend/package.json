@@ -9,16 +9,18 @@
     "prepare": "cd .. && husky install",
     "lint": "eslint .",
     "dev": "pnpm api:gen && nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
-    "build": "pnpm api:gen && run-s clean compile postBuild",
+    "build": "pnpm api:gen && pnpm prisma:gen && run-s clean compile postBuild",
     "postBuild": "ncp node_modules dist/node_modules",
     "start": "pnpm run build && node -r tsconfig-paths/register dist/src/server.js",
     "clean": "rimraf dist",
     "compile": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "api:gen": "rimraf ./api/generated && openapi --input ./api/src/api.yaml --output ./api/generated"
+    "api:gen": "rimraf ./api/generated && openapi --input ./api/src/api.yaml --output ./api/generated",
+    "prisma:gen": "prisma generate"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^7.5.1",
     "@google-cloud/storage": "^7.9.0",
+    "@prisma/client": "5.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.1",
@@ -54,6 +56,7 @@
     "npm-run-all": "^4.1.5",
     "openapi-typescript-codegen": "^0.28.0",
     "prettier": "^2.8.8",
+    "prisma": "^5.11.0",
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",

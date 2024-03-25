@@ -1,15 +1,10 @@
 import { UserDto } from '@api/generated'
+import { UserDao } from '@prisma/client'
 
-/**
- * Convert a row to a user dto
- * @param {any} row the row to convert
- * @returns {UserDto} the converted user
- */
-const convertRowToUserDto = (row: any): UserDto => {
+
+export const convertUserDaoToDto = (userDao: UserDao): UserDto => {
   return {
-    teamId: row.teamId,
-    andrewId: row.andrewId,
+    teamId: userDao.teamDaoGithubUsername == null ? undefined : userDao.teamDaoGithubUsername,
+    andrewId: userDao.andrewId,
   }
 }
-
-export default convertRowToUserDto
