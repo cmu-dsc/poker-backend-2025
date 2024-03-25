@@ -62,30 +62,33 @@ GCLOUD_ADMIN_KEY=your-gcp-service-account-key-in-json
 
 ## Datamodel
 
-The data is stored in BigQuery, the schema is as follows:
+The data is stored in MySQL, the schema is as follows:
 
 ```mermaid
 
-classDiagram
-    class User {
+classDiagramclassDiagram
+    class UserDao {
         + andrewId: string
-        + teamId: string
+        + teamDaoGithubUsername: string?
     }
 
-    class Team {
+    class TeamDao {
         + githubUsername: string
-        + elo: number
     }
 
-    class Match {
+    class TeamMatchDao {
+        + id: int
         + matchId: string
-        + team1Name: string
-        + team2Name: string
-        + team1Bankroll: number
-        + team2Bankroll: number
-        + timestamp: Date
+        + teamId: string
+        + bankroll: int
     }
 
-    User --> Team
-    Team --> Match
+    class MatchDao {
+        + matchId: string
+        + timestamp: DateTime
+    }
+
+    UserDao "1..4" --> "1" TeamDao : "is a member of"
+    TeamDao "1" --> "*" TeamMatchDao : "participates in"
+    TeamMatchDao "1" -- "1" MatchDao : "associated with"
 ```
