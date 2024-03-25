@@ -66,7 +66,7 @@ The data is stored in MySQL, the schema is as follows:
 
 ```mermaid
 
-classDiagramclassDiagram
+classDiagram
     class UserDao {
         + andrewId: string
         + teamDaoGithubUsername: string?
@@ -91,4 +91,5 @@ classDiagramclassDiagram
     UserDao "1..4" --> "1" TeamDao : "is a member of"
     TeamDao "1" --> "*" TeamMatchDao : "participates in"
     TeamMatchDao "1" -- "1" MatchDao : "associated with"
+
 ```
