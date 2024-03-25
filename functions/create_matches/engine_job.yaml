@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: engine-{{MATCH_ID}}
 spec:
-  ttlSecondsAfterFinished: 100
+  ttlSecondsAfterFinished: 15
   template:
     spec:
       initContainers:
