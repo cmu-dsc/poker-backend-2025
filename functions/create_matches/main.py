@@ -76,7 +76,13 @@ def create_matches(request):
         # Submit match tasks to the executor
         match_futures = [
             executor.submit(
-                create_match, team1, team2, apps_v1, core_v1, bigquery_client
+                create_match,
+                team1,
+                team2,
+                apps_v1,
+                core_v1,
+                bigquery_client,
+                api_client,
             )
             for team1, team2 in team_pairs
         ]
@@ -88,7 +94,7 @@ def create_matches(request):
     return {"message": "Matches created successfully"}
 
 
-def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
+def create_match(team1, team2, apps_v1, core_v1, bigquery_client, api_client):
     # Generate a unique match_id using a combination of team names and current timestamp
     match_id = f"{team1}-{team2}-{int(time.time())}"
 
@@ -100,23 +106,24 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.create_namespaced_service(namespace="default", body=bot1_service)
     core_v1.create_namespaced_service(namespace="default", body=bot2_service)
 
-    # Create the game engine Pod
-    game_engine_pod = create_game_engine_pod(
+    # Create the game engine Job
+    game_engine_job = create_game_engine_job(
         team1, team2, match_id, bot1_uuid, bot2_uuid
     )
-    core_v1.create_namespaced_pod(namespace="default", body=game_engine_pod)
+    batch_v1 = client.BatchV1Api(api_client)
+    batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
 
-    print("CREATED pod")
+    print("CREATED job")
 
-    # Watch for the game engine pod status
+    # Watch for the game engine job status
     w = watch.Watch()
     for event in w.stream(
-        core_v1.list_namespaced_pod,
+        batch_v1.list_namespaced_job,
         namespace="default",
         field_selector=f"metadata.name=engine-{match_id}",
     ):
-        pod = event["object"]
-        if pod.status.phase == "Succeeded" or pod.status.phase == "Failed":
+        job = event["object"]
+        if job.status.succeeded or job.status.failed:
             w.stop()
             break
 
@@ -149,7 +156,7 @@ def create_match(team1, team2, apps_v1, core_v1, bigquery_client):
     core_v1.delete_namespaced_service(
         name=f"{team2}-bot-service-{bot2_uuid}", namespace="default"
     )
-    apps_v1.delete_namespaced_pod(name=f"engine-{match_id}", namespace="default")
+    batch_v1.delete_namespaced_job(name=f"engine-{match_id}", namespace="default")
 
 
 def create_bot_resources(team_name):
@@ -173,19 +180,19 @@ def create_bot_resources(team_name):
     return deployment, service, bot_uuid
 
 
-def create_game_engine_pod(team1, team2, match_id, bot1_uuid, bot2_uuid):
-    with open("engine_pod.yaml") as f:
-        pod_yaml = f.read()
-    pod_yaml = (
-        pod_yaml.replace("{{TEAM1}}", team1)
+def create_game_engine_job(team1, team2, match_id, bot1_uuid, bot2_uuid):
+    with open("engine_job.yaml") as f:
+        job_yaml = f.read()
+    job_yaml = (
+        job_yaml.replace("{{TEAM1}}", team1)
         .replace("{{TEAM2}}", team2)
         .replace("{{MATCH_ID}}", match_id)
     )
-    pod_yaml = pod_yaml.replace("{{BOT1_UUID}}", bot1_uuid).replace(
+    job_yaml = job_yaml.replace("{{BOT1_UUID}}", bot1_uuid).replace(
         "{{BOT2_UUID}}", bot2_uuid
     )
-    pod = yaml.safe_load(pod_yaml)
-    return pod
+    job = yaml.safe_load(job_yaml)
+    return job
 
 
 def update_mmr(team1, team2, winner, bigquery_client):
