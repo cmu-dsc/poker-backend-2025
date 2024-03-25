@@ -8,14 +8,14 @@ import { UserDao } from '@prisma/client'
  * @returns {UserDto} the corresponding user
  */
 export const getUserByAndrewId = async (andrewId: string): Promise<UserDao> => {
-  let retrievedUser: UserDao | null = dbClient.userDao.findUnique({
+  let retrievedUser: UserDao | null = await dbClient.userDao.findUnique({
     where: {
       andrewId,
     },
   }) as any as UserDao | null
 
   if (!retrievedUser) {
-    retrievedUser = dbClient.userDao.create({
+    retrievedUser = await dbClient.userDao.create({
       data: {
         andrewId,
       },

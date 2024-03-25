@@ -1,7 +1,7 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
 import createServiceAccountAndResources from 'src/services/serviceAccountService'
-import { checkAndrewIdPartOfTeam } from 'src/services/permissions/teamPermissionService'
+import { checkAndrewIdPartOfTeamDto } from 'src/services/permissions/teamPermissionService'
 import {
   createTeam,
   deleteTeam,
@@ -17,6 +17,7 @@ import {
   convertTeamDaoToDto,
   convertTeamDaoWithStatsToDto,
 } from 'src/services/converters/teamConverterService'
+import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 
 /**
  * Create a new team
@@ -29,7 +30,7 @@ export const postTeam = async (
 ) => {
   const team: TeamDto = validateTeam(req.body)
 
-  await checkAndrewIdPartOfTeam(req.andrewId!, team)
+  await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
   const createdTeam: TeamDao = await createTeam(team)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
@@ -67,7 +68,7 @@ export const putTeamByGithubUsername = async (
   const team: TeamDto = validateTeam(req.body)
 
   team.githubUsername = githubName
-  await checkAndrewIdPartOfTeam(req.andrewId!, team)
+  await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
 
   const updatedTeamDao: TeamDao = await updateTeamByGithubUsername(
     githubName,
@@ -89,8 +90,14 @@ export const deleteTeamByGithubUsername = async (
 ) => {
   const githubName: string = validateTeamName(req.params.githubUsername)
 
-  const team: TeamDao = await getTeamById(githubName)
-  await checkAndrewIdPartOfTeam(req.andrewId!, team)
+  const team = await getTeamById(githubName)
+  // @ts-ignore
+  if (!team.members.map(member => member.andrewId).includes(req.andrewId!)) {
+    throw new ApiError(
+      ApiErrorCodes.FORBIDDEN,
+      'User does not have permission to delete this team',
+    )
+  }
 
   await deleteTeam(githubName)
 
