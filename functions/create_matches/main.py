@@ -81,23 +81,21 @@ def create_matches(request):
             teams = db_conn.execute(query).fetchall()
 
     # Filter out teams without valid images
-    teams_with_images = [
-        team for team in teams if team_has_image(team["githubUsername"])
-    ]
+    teams_with_images = [team for team in teams if team_has_image(team[0])]
 
     # Prepare for matchmaking
     team_pairs = []
 
     # Pair teams with the closest rolling winrate
     for i in range(0, len(teams_with_images) - 1, 2):
-        team1 = teams_with_images[i]["githubUsername"]
-        team2 = teams_with_images[i + 1]["githubUsername"]
+        team1 = teams_with_images[i][0]
+        team2 = teams_with_images[i + 1][0]
         team_pairs.append((team1, team2))
 
     # If there is an odd number of teams, pair the last team with the second to last team
     if len(teams_with_images) % 2 != 0:
-        team1 = teams_with_images[-1]["githubUsername"]
-        team2 = teams_with_images[-2]["githubUsername"]
+        team1 = teams_with_images[-1][0]
+        team2 = teams_with_images[-2][0]
         team_pairs.append((team1, team2))
 
     # Create a ThreadPoolExecutor to run matches concurrently
