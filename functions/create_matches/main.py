@@ -66,14 +66,14 @@ def create_matches(request):
                             NULLIF(COUNT(tm.id), 0), 0) AS rolling_winrate
                 FROM TeamDao t
                 LEFT JOIN (
-                    SELECT *
-                    FROM TeamMatchDao
-                    WHERE matchId IN (
+                    SELECT tm.*
+                    FROM TeamMatchDao tm
+                    JOIN (
                         SELECT matchId
                         FROM MatchDao
                         ORDER BY timestamp DESC
                         LIMIT 5
-                    )
+                    ) m ON tm.matchId = m.matchId
                 ) tm ON t.githubUsername = tm.teamId
                 GROUP BY t.githubUsername
                 ORDER BY rolling_winrate DESC
@@ -185,6 +185,15 @@ def create_match(team1, team2, apps_v1, core_v1, api_client):
         name=f"{team2}-bot-service-{bot2_uuid}", namespace="default"
     )
     batch_v1.delete_namespaced_job(name=f"engine-{match_id}", namespace="default")
+
+    # List the Pods associated with the Job
+    pod_list = core_v1.list_namespaced_pod(
+        namespace="default", label_selector=f"job-name=engine-{match_id}"
+    )
+
+    # Delete each Pod individually
+    for pod in pod_list.items:
+        core_v1.delete_namespaced_pod(name=pod.metadata.name, namespace="default")
 
 
 def create_bot_resources(team_name):
