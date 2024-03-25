@@ -8,18 +8,18 @@ import { UserDao } from '@prisma/client'
  * @returns {UserDto} the corresponding user
  */
 export const getUserByAndrewId = async (andrewId: string): Promise<UserDao> => {
-  let retrievedUser: UserDao | null = await dbClient.userDao.findUnique({
+  let retrievedUser: UserDao | null = (await dbClient.userDao.findUnique({
     where: {
       andrewId,
     },
-  }) as any as UserDao | null
+  })) as any as UserDao | null
 
   if (!retrievedUser) {
-    retrievedUser = await dbClient.userDao.create({
+    retrievedUser = (await dbClient.userDao.create({
       data: {
         andrewId,
       },
-    }) as any as UserDao
+    })) as any as UserDao
   }
 
   return retrievedUser
@@ -48,6 +48,7 @@ export const getUsersByAndrewIds = async (
  * @returns {Promise<boolean>}
  */
 export const leaveTeam = async (andrewId: string): Promise<boolean> => {
+  const teamId = (await getUserByAndrewId(andrewId)).teamDaoGithubUsername
   try {
     await dbClient.userDao.update({
       where: {
@@ -57,6 +58,27 @@ export const leaveTeam = async (andrewId: string): Promise<boolean> => {
         teamDaoGithubUsername: null,
       },
     })
+
+    if (teamId) {
+      if (teamId) {
+        const team = await dbClient.teamDao.findUnique({
+          where: {
+            githubUsername: teamId,
+          },
+          include: {
+            members: true,
+          },
+        })
+
+        if (team && team.members.length === 0) {
+          await dbClient.teamDao.delete({
+            where: {
+              githubUsername: teamId,
+            },
+          })
+        }
+      }
+    }
   } catch {
     throw new ApiError(
       ApiErrorCodes.BUSINESS_LOGIC_ERROR,
