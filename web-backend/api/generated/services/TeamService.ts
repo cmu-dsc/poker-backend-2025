@@ -36,7 +36,7 @@ export class TeamService {
      * @returns TeamDto OK
      * @throws ApiError
      */
-    public static getTeam(): CancelablePromise<Array<TeamDto>> {
+    public static getAllTeams(): CancelablePromise<Array<TeamDto>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/team',
@@ -49,7 +49,7 @@ export class TeamService {
      * @returns TeamDto OK
      * @throws ApiError
      */
-    public static getTeam1(
+    public static getTeam(
         githubUsername: string,
     ): CancelablePromise<TeamDto> {
         return __request(OpenAPI, {

@@ -98,6 +98,7 @@ paths:
         - team
       summary: Get all teams
       description: Get all teams
+      operationId: getAllTeams
       responses:
         "200":
           description: OK
