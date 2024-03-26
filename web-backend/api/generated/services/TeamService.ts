@@ -31,13 +31,25 @@ export class TeamService {
         });
     }
     /**
+     * Get all teams
+     * Get all teams
+     * @returns TeamDto OK
+     * @throws ApiError
+     */
+    public static getTeam(): CancelablePromise<Array<TeamDto>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/team',
+        });
+    }
+    /**
      * Get a team by github username
      * Get a team by github username
      * @param githubUsername The github username of the team
      * @returns TeamDto OK
      * @throws ApiError
      */
-    public static getTeam(
+    public static getTeam1(
         githubUsername: string,
     ): CancelablePromise<TeamDto> {
         return __request(OpenAPI, {
