@@ -1,4 +1,7 @@
 import { exec } from 'child_process'
+import { writeFile } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { promisify } from 'util'
 
 const execAsync = promisify(exec)
@@ -42,9 +45,30 @@ async function createArtifactRegistryRepo(
   location: string,
   repositoryId: string,
 ) {
-  const command = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker`
-  await execAsync(command)
+  const createCommand = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker`
+  await execAsync(createCommand)
   console.log(`Created Artifact Registry repository: ${repositoryId}`)
+
+  const policyContent = [
+    {
+      name: 'delete-untagged-artifacts',
+      action: {
+        type: 'Delete',
+      },
+      condition: {
+        tagState: 'untagged',
+      },
+    },
+  ]
+
+  const tempDir = tmpdir()
+  const policyFile = join(tempDir, 'cleanup_policy.json')
+
+  await writeFile(policyFile, JSON.stringify(policyContent, null, 2))
+
+  const setPolicyCommand = `gcloud artifacts repositories set-cleanup-policies ${repositoryId} --project=${projectId} --location=${location} --policy=${policyFile}`
+  await execAsync(setPolicyCommand)
+  console.log(`Set cleanup policy for repository: ${repositoryId}`)
 }
 
 async function grantArtifactRegistryWriterRole(

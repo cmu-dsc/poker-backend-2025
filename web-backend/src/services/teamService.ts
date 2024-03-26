@@ -11,14 +11,14 @@ import { getUsersByAndrewIds } from './userService'
  * @throws {ApiError} if the team is not found
  */
 export const getTeamById = async (teamId: string): Promise<TeamDao> => {
-  const retrievedTeam: TeamDao | null = await dbClient.teamDao.findUnique({
+  const retrievedTeam: TeamDao | null = (await dbClient.teamDao.findUnique({
     where: {
       githubUsername: teamId,
     },
     include: {
       members: true,
     },
-  }) as any as TeamDao | null
+  })) as any as TeamDao | null
 
   if (!retrievedTeam) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Team not found')

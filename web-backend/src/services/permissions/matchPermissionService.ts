@@ -1,8 +1,8 @@
 import { UserDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
+import { MatchDao } from '@prisma/client'
 import { getUserByAndrewId } from '../userService'
 import { getMatchById } from '../matchService'
-import { MatchDao } from '@prisma/client'
 import { convertMatchDaoWithTeamMatchDaosToDto } from '../converters/matchConverterService'
 
 export const checkAndrewIdPermissionsForMatch = async (

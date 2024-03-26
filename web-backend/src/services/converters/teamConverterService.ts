@@ -41,7 +41,7 @@ export const convertTeamDaoWithStatsToDto = async (
   })
 
   const wonMatches = teamMatches.filter(teamMatch => {
-    const teamMatchDaos = teamMatch.match.teamMatchDaos
+    const { teamMatchDaos } = teamMatch.match
     if (
       teamMatchDaos.length !== 2 &&
       !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
@@ -54,7 +54,7 @@ export const convertTeamDaoWithStatsToDto = async (
   }).length
 
   const lostMatches = teamMatches.filter(teamMatch => {
-    const teamMatchDaos = teamMatch.match.teamMatchDaos
+    const { teamMatchDaos } = teamMatch.match
     if (
       teamMatchDaos.length !== 2 &&
       !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)

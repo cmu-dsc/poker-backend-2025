@@ -1,9 +1,9 @@
 import * as http from 'http'
 import { Storage } from '@google-cloud/storage'
+import { PrismaClient } from '@prisma/client'
 import logger from './middleware/logger/logger'
 import env from './config/env'
 import app from './app'
-import { PrismaClient } from '@prisma/client'
 
 export const dbClient: PrismaClient = new PrismaClient()
 

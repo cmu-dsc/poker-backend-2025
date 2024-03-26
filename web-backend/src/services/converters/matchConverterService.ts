@@ -1,8 +1,12 @@
 import { MatchDto } from '@api/generated'
 
 export const convertMatchDaoWithTeamMatchDaosToDto = (
-  matchDao: any): MatchDto => {
-  if (matchDao.teamMatchDaos === undefined || matchDao.teamMatchDaos.length !== 2) {
+  matchDao: any,
+): MatchDto => {
+  if (
+    matchDao.teamMatchDaos === undefined ||
+    matchDao.teamMatchDaos.length !== 2
+  ) {
     throw new Error('Invalid TeamMatchDaos in MatchDao')
   }
 

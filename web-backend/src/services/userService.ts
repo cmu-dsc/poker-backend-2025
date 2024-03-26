@@ -33,7 +33,7 @@ export const getUserByAndrewId = async (andrewId: string): Promise<UserDao> => {
 export const getUsersByAndrewIds = async (
   andrewIds: string[],
 ): Promise<UserDao[]> => {
-  return await dbClient.userDao.findMany({
+  return dbClient.userDao.findMany({
     where: {
       andrewId: {
         in: andrewIds,

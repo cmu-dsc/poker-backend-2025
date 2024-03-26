@@ -1,7 +1,7 @@
-import { TeamDto, UserDto } from '@api/generated'
+import { UserDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
-import { getUserByAndrewId } from '../userService'
 import { TeamDao, UserDao } from '@prisma/client'
+import { getUserByAndrewId } from '../userService'
 
 export const checkUserIdPermissionsForTeamGithubName = async (
   userId: string,
