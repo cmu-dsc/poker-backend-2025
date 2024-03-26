@@ -8,6 +8,8 @@ export const checkUserIdPermissionsForTeamGithubName = async (
   githubName: string,
 ): Promise<boolean> => {
   const user: UserDto = await getUserByAndrewId(userId)
+  console.log(user.teamId)
+  console.log(githubName)
   if (user.teamId === githubName) {
     return true
   }
