@@ -60,24 +60,14 @@ export const leaveTeam = async (andrewId: string): Promise<boolean> => {
     })
 
     if (teamId) {
-      if (teamId) {
-        const team = await dbClient.teamDao.findUnique({
-          where: {
-            githubUsername: teamId,
+      await dbClient.teamDao.deleteMany({
+        where: {
+          githubUsername: teamId!,
+          members: {
+            none: {},
           },
-          include: {
-            members: true,
-          },
-        })
-
-        if (team && team.members.length === 0) {
-          await dbClient.teamDao.delete({
-            where: {
-              githubUsername: teamId,
-            },
-          })
-        }
-      }
+        },
+      })
     }
   } catch {
     throw new ApiError(
