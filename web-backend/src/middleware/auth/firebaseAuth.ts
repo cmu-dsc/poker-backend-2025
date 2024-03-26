@@ -19,7 +19,7 @@ const firebaseAuthMiddleware = async (
     const authHeader: string | undefined = req.headers.authorization
 
     if (!authHeader) {
-      res.status(401).send('Authorization header missing')
+      res.status(401).json({ message: 'Authorization header missing' })
       return
     }
 
@@ -33,7 +33,7 @@ const firebaseAuthMiddleware = async (
 
     // Check if the ID token belongs to a Google account
     if (decodedToken.firebase.sign_in_provider !== 'google.com') {
-      res.status(401).send('Invalid auth provider')
+      res.status(401).json({ message: 'Invalid auth provider' })
       return
     }
 
@@ -45,7 +45,7 @@ const firebaseAuthMiddleware = async (
     // Validate that the Google account email ends with 'cmu.edu'
     const { email } = decodedToken
     if (!email || !email.endsWith('cmu.edu')) {
-      res.status(401).send('Invalid email domain')
+      res.status(401).json({ message: 'Invalid email domain' })
       return
     }
 
@@ -58,7 +58,7 @@ const firebaseAuthMiddleware = async (
     // Call the next middleware or route handler
     next()
   } catch (error) {
-    res.status(401).send('Invalid auth token')
+    res.status(401).json({ message: 'Invalid auth token' })
   }
 }
 

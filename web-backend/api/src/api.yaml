@@ -93,6 +93,21 @@ paths:
           description: Forbidden
         "422":
           description: User already in a team, github username already taken, or team already exists
+    get:
+      tags:
+        - team
+      summary: Get all teams
+      description: Get all teams
+      operationId: getAllTeams
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamDto"
   
   /team/{githubUsername}:
     get:

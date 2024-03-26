@@ -31,6 +31,18 @@ export class TeamService {
         });
     }
     /**
+     * Get all teams
+     * Get all teams
+     * @returns TeamDto OK
+     * @throws ApiError
+     */
+    public static getAllTeams(): CancelablePromise<Array<TeamDto>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/team',
+        });
+    }
+    /**
      * Get a team by github username
      * Get a team by github username
      * @param githubUsername The github username of the team
