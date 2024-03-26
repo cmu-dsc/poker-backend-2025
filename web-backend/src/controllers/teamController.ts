@@ -5,6 +5,7 @@ import { checkAndrewIdPartOfTeamDto } from 'src/services/permissions/teamPermiss
 import {
   createTeam,
   deleteTeam,
+  getAllTeams,
   getTeamById,
   updateTeamByGithubUsername,
 } from 'src/services/teamService'
@@ -104,4 +105,19 @@ export const deleteTeamByGithubUsername = async (
   await deleteTeam(githubName)
 
   res.status(204).send()
+}
+
+/**
+ * Get all teams
+ * @param {Request<any, any, any, any> & { andrewId?: string}} req the request
+ * @param {Response<TeamDto[]>} res all teams with stats
+ */
+export const getTeam = async (
+  req: Request<any, any, any, any> & { andrewId?: string },
+  res: Response<TeamDto[]>,
+) => {
+  const teams = await getAllTeams()
+  const teamsDto = await Promise.all(teams.map(convertTeamDaoWithStatsToDto))
+
+  res.status(200).json(teamsDto)
 }

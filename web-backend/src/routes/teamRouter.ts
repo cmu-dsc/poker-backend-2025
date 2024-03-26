@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   deleteTeamByGithubUsername,
+  getTeam,
   getTeamByGithubUsername,
   postTeam,
   putTeamByGithubUsername,
@@ -14,6 +15,7 @@ const teamRouter = () => {
   const router = Router()
 
   router.post('/', asyncWrapper(postTeam))
+  router.get('/', asyncWrapper(getTeam))
   router.get('/:githubUsername', asyncWrapper(getTeamByGithubUsername))
   router.put('/:githubUsername', asyncWrapper(putTeamByGithubUsername))
   router.delete('/:githubUsername', asyncWrapper(deleteTeamByGithubUsername))

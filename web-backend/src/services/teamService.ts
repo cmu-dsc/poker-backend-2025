@@ -28,6 +28,18 @@ export const getTeamById = async (teamId: string): Promise<TeamDao> => {
 }
 
 /**
+ * Get all teams from the database
+ * @returns {TeamDao[]} all teams
+ */
+export const getAllTeams = async (): Promise<TeamDao[]> => {
+  return await dbClient.teamDao.findMany({
+    include: {
+      members: true,
+    },
+  })
+}
+
+/**
  * Update a team in the database by teamId
  * @param {string} githubUsername the id of the team
  * @param {TeamDto} team the updated team
