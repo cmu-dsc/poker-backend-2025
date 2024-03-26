@@ -225,9 +225,9 @@ paths:
         "200":
           description: OK
           content:
-            text/csv:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/DownloadLinkDto"
         "401":
           description: Unauthorized
         "403":
@@ -251,9 +251,9 @@ paths:
         "200":
           description: OK
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/DownloadLinkDto"
         "401":
           description: Unauthorized
         "403":
@@ -331,6 +331,18 @@ components:
         - timestamp
         - team1Score
         - team2Score
+    DownloadLinkDto:
+      type: object
+      properties:
+        downloadUrl:
+          type: string
+          example: "http://localhost:8080/match/6ba7b810-9dad-11d1-80b4-00c04fd430c8/logs/engine"
+        filetype:
+          type: string
+          enum: ["csv", "txt"]
+      required:
+        - downloadLink
+        - filetype
 
   securitySchemes:
     bearerAuth:            # arbitrary name for the security scheme

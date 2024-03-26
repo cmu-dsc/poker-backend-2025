@@ -8,6 +8,7 @@ import {
 import { MatchDao } from '@prisma/client'
 import { dbClient, storageClient } from 'src/server'
 import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
+import { GetSignedUrlConfig } from '@google-cloud/storage'
 
 /**
  * Retrieve a match from the database by matchId
@@ -56,48 +57,59 @@ export const getMatchesByTeamId = async (
 }
 
 /**
- * Get the engine logs for a match by the match id
+ * Get the engine logs download link for a match by the match id
  * @param {string} matchId the id of the match
  * @returns {Promise<string>} the engine logs
  */
-export const getEngineLog = async (matchId: string): Promise<string> => {
+export const getEngineLogDownloadLink = async (
+  matchId: string,
+): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    const content: string = (
-      await storageClient
-        .bucket(BUCKET_NAME)
-        .file(getEngineLogPath(match))
-        .download()
-    ).toString()
-    return content
+    return await getSignedLinkForPath(getEngineLogPath(match))
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }
 }
 
 /**
- * Get the bot logs for a match by the match id
+ * Get the bot logs download link for a match by the match id
  * @param {string} matchId the id of the match
  * @param {string} teamGithubUsername the github username of the team
  * @returns {Promise<string>} the bot logs
  */
-export const getBotLog = async (
+export const getBotLogDownloadLink = async (
   matchId: string,
   teamGithubUsername: string,
 ): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    const content: string = (
-      await storageClient
-        .bucket(BUCKET_NAME)
-        .file(getBotLogPathTeam(match, teamGithubUsername))
-        .download()
-    ).toString()
-
-    return content
+    return await getSignedLinkForPath(
+      getBotLogPathTeam(match, teamGithubUsername),
+    )
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Bot log not found')
   }
+}
+
+/**
+ * Get the signed link for a path in the bucket
+ * @param {string} path the path to the file in the bucket
+ * @returns the signed link
+ */
+const getSignedLinkForPath = async (path: string): Promise<string> => {
+  const options: GetSignedUrlConfig = {
+    version: 'v4',
+    action: 'read',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+  }
+
+  const [url] = await storageClient
+    .bucket(BUCKET_NAME)
+    .file(path)
+    .getSignedUrl(options)
+
+  return url
 }
