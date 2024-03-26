@@ -58,7 +58,10 @@ Create a `.env` file in the root of the project with the following environment v
 ```
 PORT=8080
 GCLOUD_ADMIN_KEY=your-gcp-service-account-key-in-json
+DATABASE_URL="mysql://webbackend:<password>@0.0.0.0:3306/pokerai-db?host=/cloudsql/pokerai-417521:us-east4:pokerai-sql"
 ```
+
+To test locally, run cloud-sql-proxy using the [script](/setupproxy.sh).
 
 ## Datamodel
 
