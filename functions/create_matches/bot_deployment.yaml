@@ -24,3 +24,6 @@ spec:
           requests:
             cpu: "0.5"
             memory: "2Gi"
+        env:
+        - name: PYTHONUNBUFFERED
+          value: 1

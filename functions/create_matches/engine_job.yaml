@@ -39,6 +39,8 @@ spec:
           value: .YFHUMhVJry#'SDt
         - name: DB_NAME
           value: pokerai-db
+        - name: PYTHONUNBUFFERED
+          value: 1
         volumeMounts:
         - name: logs
           mountPath: /usr/src/app/logs
