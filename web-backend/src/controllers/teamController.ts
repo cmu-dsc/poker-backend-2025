@@ -34,7 +34,7 @@ export const postTeam = async (
   const createdTeam: TeamDao = await createTeam(team)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
-  await createServiceAccountAndResources(team.githubUsername)
+  createServiceAccountAndResources(team.githubUsername)
 
   res.status(201).json(teamDto)
 }
