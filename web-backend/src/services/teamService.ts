@@ -81,6 +81,15 @@ export const updateTeamByGithubUsername = async (
     include: { members: true },
   })
 
+  await dbClient.teamDao.deleteMany({
+    where: {
+      githubUsername: updatedTeam.githubUsername,
+      members: {
+        none: {},
+      },
+    },
+  })
+
   return updatedTeam
 }
 
@@ -100,7 +109,7 @@ export const createTeam = async (team: TeamDto): Promise<TeamDao> => {
   if (retrievedTeam) {
     throw new ApiError(
       ApiErrorCodes.BUSINESS_LOGIC_ERROR,
-      'Team already exists',
+      'Team with this GitHub username already exists',
     )
   }
 

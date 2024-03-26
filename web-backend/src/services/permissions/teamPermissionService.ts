@@ -7,10 +7,9 @@ export const checkUserIdPermissionsForTeamGithubName = async (
   userId: string,
   githubName: string,
 ): Promise<boolean> => {
-  const user: UserDto = await getUserByAndrewId(userId)
-  console.log(user.teamId)
-  console.log(githubName)
-  if (user.teamId === githubName) {
+  const user: UserDao = await getUserByAndrewId(userId)
+
+  if (user.teamDaoGithubUsername === githubName) {
     return true
   }
   throw new ApiError(

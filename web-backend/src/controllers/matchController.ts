@@ -1,4 +1,4 @@
-import { MatchDto, UserDto } from '@api/generated'
+import { MatchDto } from '@api/generated'
 import { Request, Response } from 'express'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import {
@@ -11,6 +11,7 @@ import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permission
 import { getUserByAndrewId } from 'src/services/userService'
 import { validateMatchId } from 'src/services/validators/matchValidatorService'
 import { validateTeamName } from 'src/services/validators/teamValidatorService'
+import { UserDao } from '@prisma/client'
 
 /**
  * Get all matches for a team by the team id (github username)
@@ -61,14 +62,14 @@ export const getMatchByMatchIdLogsBot = async (
 
   await checkAndrewIdPermissionsForMatch(req.andrewId!, req.params.matchId)
 
-  const user: UserDto = await getUserByAndrewId(req.andrewId!)
-  if (!user.teamId) {
+  const user: UserDao = await getUserByAndrewId(req.andrewId!)
+  if (!user.teamDaoGithubUsername) {
     throw new ApiError(
       ApiErrorCodes.FORBIDDEN,
       'User does not have permission to access this match',
     )
   }
-  const logs: string = await getBotLog(matchId, user.teamId)
+  const logs: string = await getBotLog(matchId, user.teamDaoGithubUsername)
 
   res.status(200).send(logs)
 }

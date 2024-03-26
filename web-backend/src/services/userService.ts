@@ -62,7 +62,7 @@ export const leaveTeam = async (andrewId: string): Promise<boolean> => {
     if (teamId) {
       await dbClient.teamDao.deleteMany({
         where: {
-          githubUsername: teamId!,
+          githubUsername: teamId,
           members: {
             none: {},
           },
