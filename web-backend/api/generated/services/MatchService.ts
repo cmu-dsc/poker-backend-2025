@@ -33,12 +33,35 @@ export class MatchService {
      * @returns DownloadLinkDto OK
      * @throws ApiError
      */
-    public static getMatchLogsEngine(
+    public static getMatchLogsEngineCsv(
         matchId: string,
-    ): CancelablePromise<Array<DownloadLinkDto>> {
+    ): CancelablePromise<DownloadLinkDto> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/match/{matchId}/logs/engine',
+            url: '/match/{matchId}/logs/engine/csv',
+            path: {
+                'matchId': matchId,
+            },
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
+     * Get the engine logs of a match by match id
+     * Get the engine logs of a match by match id
+     * @param matchId The match id
+     * @returns DownloadLinkDto OK
+     * @throws ApiError
+     */
+    public static getMatchLogsEngineTxt(
+        matchId: string,
+    ): CancelablePromise<DownloadLinkDto> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/match/{matchId}/logs/engine/txt',
             path: {
                 'matchId': matchId,
             },
