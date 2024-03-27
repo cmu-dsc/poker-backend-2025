@@ -2,7 +2,8 @@ import { MatchDao } from '@prisma/client'
 
 export const BUCKET_NAME = 'poker-ai-blobs'
 export const MATCH_PREFIX = 'match_'
-export const ENGINE_LOG = 'engine_log.csv'
+export const ENGINE_LOG_CSV = 'engine_log.csv'
+export const ENGINE_LOG_TXT = 'engine_log.txt'
 export const BOT_LOG = 'debug_log.txt'
 
 /**
@@ -10,8 +11,14 @@ export const BOT_LOG = 'debug_log.txt'
  * @param {MatchDto} match the match to get the engine log path for
  * @returns {string} the path to the engine log
  */
-export const getEngineLogPath = (match: MatchDao): string => {
-  return [MATCH_PREFIX + match.matchId, ENGINE_LOG].join('/')
+export const getEngineLogPath = (
+  match: MatchDao,
+  type: 'csv' | 'txt',
+): string => {
+  return [
+    MATCH_PREFIX + match.matchId,
+    type === 'csv' ? ENGINE_LOG_CSV : ENGINE_LOG_TXT,
+  ].join('/')
 }
 
 /**

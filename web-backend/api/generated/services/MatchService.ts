@@ -35,7 +35,7 @@ export class MatchService {
      */
     public static getMatchLogsEngine(
         matchId: string,
-    ): CancelablePromise<DownloadLinkDto> {
+    ): CancelablePromise<Array<DownloadLinkDto>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/match/{matchId}/logs/engine',

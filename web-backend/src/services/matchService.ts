@@ -61,13 +61,30 @@ export const getMatchesByTeamId = async (
  * @param {string} matchId the id of the match
  * @returns {Promise<string>} the engine logs
  */
-export const getEngineLogDownloadLink = async (
+export const getEngineLogDownloadLinkCSV = async (
   matchId: string,
 ): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getEngineLogPath(match))
+    return await getSignedLinkForPath(getEngineLogPath(match, 'csv'))
+  } catch (e) {
+    throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
+  }
+}
+
+/**
+ * Get the engine logs download link for a match by the match id
+ * @param {string} matchId the id of the match
+ * @returns {Promise<string>} the engine logs
+ */
+export const getEngineLogDownloadLinkTXT = async (
+  matchId: string,
+): Promise<string> => {
+  const match: MatchDao = await getMatchById(matchId)
+
+  try {
+    return await getSignedLinkForPath(getEngineLogPath(match, 'txt'))
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }

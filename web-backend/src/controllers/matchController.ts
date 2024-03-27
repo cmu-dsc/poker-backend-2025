@@ -3,7 +3,8 @@ import { Request, Response } from 'express'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import {
   getBotLogDownloadLink,
-  getEngineLogDownloadLink,
+  getEngineLogDownloadLinkCSV,
+  getEngineLogDownloadLinkTXT,
   getMatchesByTeamId,
 } from 'src/services/matchService'
 import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
@@ -38,15 +39,21 @@ export const getMatchTeamByGithubUsername = async (
  */
 export const getMatchByMatchIdLogsEngine = async (
   req: Request<any, any, any, any> & { andrewId?: string },
-  res: Response<DownloadLinkDto>,
+  res: Response<DownloadLinkDto[]>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
   await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
 
-  const downloadUrl: string = await getEngineLogDownloadLink(matchId)
+  const downloadUrlCSV: string = await getEngineLogDownloadLinkCSV(matchId)
+  const downloadUrlTXT: string = await getEngineLogDownloadLinkTXT(matchId)
 
-  res.status(200).json({ downloadUrl, filetype: 'csv' } as DownloadLinkDto)
+  res
+    .status(200)
+    .json([
+      { downloadUrl: downloadUrlCSV, filetype: 'csv' } as DownloadLinkDto,
+      { downloadUrl: downloadUrlTXT, filetype: 'txt' } as DownloadLinkDto,
+    ])
 }
 
 /**
