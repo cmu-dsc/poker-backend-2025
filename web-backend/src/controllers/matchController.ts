@@ -33,27 +33,43 @@ export const getMatchTeamByGithubUsername = async (
 }
 
 /**
- * Get the engine logs for a match by the match id
+ * Get the engine CSV logs for a match by the match id
  * @param {Request<any, any, any, any>} req the request containing the match id
  * @param {Response<DownloadLinkDto>} res the response containing the engine logs download link
  */
-export const getMatchByMatchIdLogsEngine = async (
+export const getMatchByMatchIdLogsEngineCSV = async (
   req: Request<any, any, any, any> & { andrewId?: string },
-  res: Response<DownloadLinkDto[]>,
+  res: Response<DownloadLinkDto>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
   await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
 
   const downloadUrlCSV: string = await getEngineLogDownloadLinkCSV(matchId)
+
+  res
+    .status(200)
+    .json({ downloadUrl: downloadUrlCSV, filetype: 'csv' } as DownloadLinkDto)
+}
+
+/**
+ * Get the engine TXT logs for a match by the match id
+ * @param {Request<any, any, any, any>} req the request containing the match id
+ * @param {Response<DownloadLinkDto>} res the response containing the engine logs download link
+ */
+export const getMatchByMatchIdLogsEngineTXT = async (
+  req: Request<any, any, any, any> & { andrewId?: string },
+  res: Response<DownloadLinkDto>,
+) => {
+  const matchId: string = validateMatchId(req.params.matchId)
+
+  await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
+
   const downloadUrlTXT: string = await getEngineLogDownloadLinkTXT(matchId)
 
   res
     .status(200)
-    .json([
-      { downloadUrl: downloadUrlCSV, filetype: 'csv' } as DownloadLinkDto,
-      { downloadUrl: downloadUrlTXT, filetype: 'txt' } as DownloadLinkDto,
-    ])
+    .json({ downloadUrl: downloadUrlTXT, filetype: 'txt' } as DownloadLinkDto)
 }
 
 /**

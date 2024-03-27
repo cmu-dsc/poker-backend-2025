@@ -208,7 +208,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MatchDto"
-  /match/{matchId}/logs/engine:
+  /match/{matchId}/logs/engine/csv:
     get:
       tags:
         - match
@@ -227,9 +227,33 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DownloadLinkDto"
+                $ref: "#/components/schemas/DownloadLinkDto"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+  /match/{matchId}/logs/engine/txt:
+    get:
+      tags:
+        - match
+      summary: Get the engine logs of a match by match id
+      description: Get the engine logs of a match by match id
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+          description: The match id
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLinkDto"
         "401":
           description: Unauthorized
         "403":

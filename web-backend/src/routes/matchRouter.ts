@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import {
   getMatchByMatchIdLogsBot,
-  getMatchByMatchIdLogsEngine,
+  getMatchByMatchIdLogsEngineCSV,
+  getMatchByMatchIdLogsEngineTXT,
   getMatchTeamByGithubUsername,
 } from 'src/controllers/matchController'
 import asyncWrapper from 'src/middleware/errorhandler/asyncWrapper'
@@ -16,7 +17,8 @@ const matchRouter = () => {
     '/team/:githubUsername',
     asyncWrapper(getMatchTeamByGithubUsername),
   )
-  router.get('/:matchId/logs/engine', asyncWrapper(getMatchByMatchIdLogsEngine))
+  router.get('/:matchId/logs/engine/csv', asyncWrapper(getMatchByMatchIdLogsEngineCSV))
+  router.get('/:matchId/logs/engine/txt', asyncWrapper(getMatchByMatchIdLogsEngineTXT))
   router.get('/:matchId/logs/bot', asyncWrapper(getMatchByMatchIdLogsBot))
 
   return router
