@@ -13,7 +13,10 @@ export const checkAndrewIdPermissionsForMatch = async (
 
   const matchDto = convertMatchDaoWithTeamMatchDaosToDto(match)
 
-  if (user.teamDaoGithubUsername === matchDto.team1Id || user.teamDaoGithubUsername === matchDto.team2Id) {
+  if (
+    user.teamDaoGithubUsername === matchDto.team1Id ||
+    user.teamDaoGithubUsername === matchDto.team2Id
+  ) {
     return true
   }
   throw new ApiError(

@@ -32,7 +32,7 @@ export const getTeamById = async (teamId: string): Promise<TeamDao> => {
  * @returns {TeamDao[]} all teams
  */
 export const getAllTeams = async (): Promise<TeamDao[]> => {
-  return await dbClient.teamDao.findMany({
+  return dbClient.teamDao.findMany({
     include: {
       members: true,
     },
@@ -81,7 +81,6 @@ export const updateTeamByGithubUsername = async (
 
   const users = await getUsersByAndrewIds(team.members)
 
-
   const membersToAddWithinSystem = users
     .filter(user => !user.teamDaoGithubUsername)
     .map(user => user.andrewId)
@@ -90,7 +89,6 @@ export const updateTeamByGithubUsername = async (
   )
 
   const membersToAdd = membersToAddWithinSystem.concat(membersToAddToTheSystem)
-
 
   // Then, connect or create the users in the new list
   const updatedTeam = await dbClient.teamDao.update({

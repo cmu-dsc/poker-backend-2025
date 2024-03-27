@@ -38,7 +38,10 @@ export const postTeam = async (
   try {
     await createServiceAccountAndResources(team.githubUsername)
   } catch (error) {
-    console.error('An error occurred while creating service account and resources:', error)
+    console.error(
+      'An error occurred while creating service account and resources:',
+      error,
+    )
   }
 
   res.status(201).json(teamDto)

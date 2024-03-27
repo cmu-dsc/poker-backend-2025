@@ -7,8 +7,8 @@ import {
 } from 'src/config/bucket'
 import { MatchDao } from '@prisma/client'
 import { dbClient, storageClient } from 'src/server'
-import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
 import { GetSignedUrlConfig } from '@google-cloud/storage'
+import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
 
 /**
  * Retrieve a match from the database by matchId

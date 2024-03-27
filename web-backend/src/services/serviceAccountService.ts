@@ -85,15 +85,16 @@ async function grantArtifactRegistryWriterRole(
 }
 
 async function createServiceAccountAndResources(githubUsername: string) {
+  const username = githubUsername.toLowerCase().replace(/[^a-z0-9-]/g, '')
   const projectId = 'pokerai-417521'
-  const serviceAccountId = githubUsername
-  const displayName = githubUsername
-  const serviceAccountEmail = `${githubUsername}@${projectId}.iam.gserviceaccount.com`
-  const githubRepoRef = `${githubUsername}/poker-engine-2024`
+  const serviceAccountId = username
+  const displayName = username
+  const serviceAccountEmail = `${username}@${projectId}.iam.gserviceaccount.com`
+  const githubRepoRef = `${username}/poker-engine-2024`
   const workloadIdentityPoolId =
     'projects/979321260256/locations/global/workloadIdentityPools/github'
   const location = 'us-east4'
-  const repositoryId = githubUsername
+  const repositoryId = username
 
   try {
     await logCurrentServiceAccount()
