@@ -227,7 +227,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DownloadLinkDto"
+                type: array
+                items:
+                  $ref: "#/components/schemas/DownloadLinkDto"
         "401":
           description: Unauthorized
         "403":
