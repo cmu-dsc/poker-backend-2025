@@ -11,20 +11,32 @@ import uuid
 import yaml
 
 # Create matches for regular scrimmage
+# Pairs teams with close win rates
 @functions_framework.http
 def create_matches(request):
-    create_matches_internal(get_team_pairs_scrimmage)
+    create_matches_internal(get_team_pairs_scrimmage, "scrim")
 
-# Create matches for final tournament
+# Create matches for stage 1 of final tournament
+# Round robin between all teams (or top K > 8 teams from scrimmage, prioritized by win rate over past 6 games)
+# Matches will be tagged with prefix `final1-` in their matchId, so that our calculate_final_pnl script can
+# identify them.
 @functions_framework.http
-def create_matches_final_tourn(request):
-    create_matches_internal(get_team_pairs_round_robin, 5, True)
+def create_matches_final_stage1(request):
+    create_matches_internal(get_team_pairs_round_robin, "final1")
+
+# Create matches for stage 2 of final tournament
+# Round robin between top 8 teams from stage 1
+# TODO: In calculate_final_pnl.py, need some way of marking the top 8 teams from stage 1, so that
+#       we are able to pull them here.
+@functions_framework.http
+def create_matches_final_stage_2(request):
+    create_matches_internal(get_team_pairs_round_robin, "final2")
 
 # Shared logic for create_matches and create_matches_final
 # @param get_team_pairs: Function that pairs teams (scrimmage, round_robin, etc)
-# @param top_n: Only creates matches between teams with top N highest win rates
-#               If set to -1, creates matches between all teams.    
-def create_matches_internal(get_team_pairs, top_n = -1, is_final=False):
+# @param stage: Prefix that gets prepended to the matchIds, to identify which
+#               stage of the game out of {"scrim", "final1", "final2"}.
+def create_matches_internal(get_team_pairs, stage):
     # Use the Application Default Credentials (ADC)
     credentials = compute_engine.Credentials()
 
@@ -91,10 +103,6 @@ def create_matches_internal(get_team_pairs, top_n = -1, is_final=False):
                 ORDER BY rolling_winrate DESC
             """)
             teams = db_conn.execute(query).fetchall() 
-    
-    # Only take top N teams
-    if top_n > 0:
-        teams = teams[:top_n]
 
     # Filter out teams without valid images
     teams_with_images = [team for team in teams if team_has_image(team[0])]
@@ -113,6 +121,7 @@ def create_matches_internal(get_team_pairs, top_n = -1, is_final=False):
                 apps_v1,
                 core_v1,
                 api_client,
+                stage,
             )
             for team1, team2 in team_pairs
         ]
@@ -164,11 +173,9 @@ def team_has_image(team_name):
         return False
 
 
-def create_match(team1, team2, apps_v1, core_v1, api_client, is_final = False):
+def create_match(team1, team2, apps_v1, core_v1, api_client, stage):
     # Generate a unique match_id using a combination of team names and current timestamp
-    match_id = f"{team1}-{team2}-{int(time.time())}"
-    if is_final:
-        match_id = f"final-{match_id}"
+    match_id = f"{stage}-{team1}-{team2}-{int(time.time())}"
 
     # Create the bot Deployments and Services
     bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
