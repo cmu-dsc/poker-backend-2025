@@ -126,15 +126,20 @@ export const createTeam = async (team: TeamDto): Promise<TeamDao> => {
   }
 
   const users = await getUsersByAndrewIds(team.members)
-  const membersToAdd = users.filter(user => !user.teamDaoGithubUsername)
+
+  const membersToAddWithinSystem = users.filter(user => !user.teamDaoGithubUsername).map(user => user.andrewId)
+  const membersToAddToTheSystem = team.members.filter(member => !users.map(u => u.andrewId).includes(member))
+
+const membersToAdd = membersToAddWithinSystem.concat(membersToAddToTheSystem)  
+console.log(membersToAdd)
 
   const createdTeam: TeamDao = (await dbClient.teamDao.create({
     data: {
       githubUsername: team.githubUsername,
       members: {
         connectOrCreate: membersToAdd.map(member => ({
-          where: { andrewId: member.andrewId },
-          create: { andrewId: member.andrewId },
+          where: { andrewId: member },
+          create: { andrewId: member },
         })),
       },
     },
