@@ -16,8 +16,8 @@ const teamNameValidator = z
 const teamValidator = z.object({
   githubUsername: teamNameValidator,
   members: z.array(z.string()).max(4).min(1),
-  wins: z.number().int().positive().optional(),
-  losses: z.number().int().positive().optional(),
+  wins: z.number().int().min(0).optional(),
+  losses: z.number().int().min(0).optional(),
 })
 
 /**
