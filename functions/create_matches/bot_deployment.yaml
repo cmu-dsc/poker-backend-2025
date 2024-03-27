@@ -26,4 +26,4 @@ spec:
             memory: "2Gi"
         env:
         - name: PYTHONUNBUFFERED
-          value: 1
+          value: "1"

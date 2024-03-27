@@ -18,7 +18,7 @@ def create_matches(request):
 
     # Configure the Kubernetes client to use the ADC
     configuration = client.Configuration()
-    configuration.host = "https://34.85.198.243"  # Use your GKE cluster endpoint
+    configuration.host = "https://35.186.176.96"  # Use your GKE cluster endpoint
     configuration.verify_ssl = False  # Consider the security implications in production
     credentials.refresh(Request())
     configuration.api_key = {"authorization": "Bearer " + credentials.token}
