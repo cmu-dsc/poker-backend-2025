@@ -7,6 +7,7 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export { DownloadLinkDto } from './models/DownloadLinkDto';
 export type { HelloWorldResponseDto } from './models/HelloWorldResponseDto';
 export type { MatchDto } from './models/MatchDto';
 export type { TeamDto } from './models/TeamDto';

@@ -1,9 +1,9 @@
-import { MatchDto } from '@api/generated'
+import { DownloadLinkDto, MatchDto } from '@api/generated'
 import { Request, Response } from 'express'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import {
-  getBotLog,
-  getEngineLog,
+  getBotLogDownloadLink,
+  getEngineLogDownloadLink,
   getMatchesByTeamId,
 } from 'src/services/matchService'
 import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
@@ -34,29 +34,29 @@ export const getMatchTeamByGithubUsername = async (
 /**
  * Get the engine logs for a match by the match id
  * @param {Request<any, any, any, any>} req the request containing the match id
- * @param {Response<string>} res the response containing the engine logs
+ * @param {Response<DownloadLinkDto>} res the response containing the engine logs download link
  */
 export const getMatchByMatchIdLogsEngine = async (
   req: Request<any, any, any, any> & { andrewId?: string },
-  res: Response<string>,
+  res: Response<DownloadLinkDto>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
   await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
 
-  const logs: string = await getEngineLog(matchId)
+  const downloadUrl: string = await getEngineLogDownloadLink(matchId)
 
-  res.status(200).send(logs)
+  res.status(200).json({ downloadUrl, filetype: 'csv' } as DownloadLinkDto)
 }
 
 /**
  * Get the bot logs for a match by the match id
  * @param {Request<any, any, any, any>} req the request containing the match id
- * @param {Response<string>} res the response containing the bot logs
+ * @param {Response<DownloadLinkDto>} res the response containing the bot logs download link
  */
 export const getMatchByMatchIdLogsBot = async (
   req: Request<any, any, any, any> & { andrewId?: string },
-  res: Response<string>,
+  res: Response<DownloadLinkDto>,
 ) => {
   const matchId: string = validateMatchId(req.params.matchId)
 
@@ -69,7 +69,10 @@ export const getMatchByMatchIdLogsBot = async (
       'User does not have permission to access this match',
     )
   }
-  const logs: string = await getBotLog(matchId, user.teamDaoGithubUsername)
+  const downloadUrl: string = await getBotLogDownloadLink(
+    matchId,
+    user.teamDaoGithubUsername,
+  )
 
-  res.status(200).send(logs)
+  res.status(200).json({ downloadUrl, filetype: 'txt' } as DownloadLinkDto)
 }

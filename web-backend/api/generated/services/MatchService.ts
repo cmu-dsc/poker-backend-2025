@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DownloadLinkDto } from '../models/DownloadLinkDto';
 import type { MatchDto } from '../models/MatchDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -29,12 +30,12 @@ export class MatchService {
      * Get the engine logs of a match by match id
      * Get the engine logs of a match by match id
      * @param matchId The match id
-     * @returns string OK
+     * @returns DownloadLinkDto OK
      * @throws ApiError
      */
     public static getMatchLogsEngine(
         matchId: string,
-    ): CancelablePromise<string> {
+    ): CancelablePromise<DownloadLinkDto> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/match/{matchId}/logs/engine',
@@ -52,12 +53,12 @@ export class MatchService {
      * Get the bot logs of a match by match id
      * Get the bot logs of a match by match id
      * @param matchId The match id
-     * @returns string OK
+     * @returns DownloadLinkDto OK
      * @throws ApiError
      */
     public static getMatchLogsBot(
         matchId: string,
-    ): CancelablePromise<string> {
+    ): CancelablePromise<DownloadLinkDto> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/match/{matchId}/logs/bot',
