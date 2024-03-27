@@ -10,9 +10,21 @@ import sqlalchemy
 import uuid
 import yaml
 
-
+# Create matches for regular scrimmage
 @functions_framework.http
 def create_matches(request):
+    create_matches_internal(get_team_pairs_scrimmage)
+
+# Create matches for final tournament
+@functions_framework.http
+def create_matches_final_tourn(request):
+    create_matches_internal(get_team_pairs_round_robin, 5, True)
+
+# Shared logic for create_matches and create_matches_final
+# @param get_team_pairs: Function that pairs teams (scrimmage, round_robin, etc)
+# @param top_n: Only creates matches between teams with top N highest win rates
+#               If set to -1, creates matches between all teams.    
+def create_matches_internal(get_team_pairs, top_n = -1, is_final=False):
     # Use the Application Default Credentials (ADC)
     credentials = compute_engine.Credentials()
 
@@ -78,25 +90,17 @@ def create_matches(request):
                 GROUP BY t.githubUsername
                 ORDER BY rolling_winrate DESC
             """)
-            teams = db_conn.execute(query).fetchall()
+            teams = db_conn.execute(query).fetchall() 
+    
+    # Only take top N teams
+    if top_n > 0:
+        teams = teams[:top_n]
 
     # Filter out teams without valid images
     teams_with_images = [team for team in teams if team_has_image(team[0])]
 
     # Prepare for matchmaking
-    team_pairs = []
-
-    # Pair teams with the closest rolling winrate
-    for i in range(0, len(teams_with_images) - 1, 2):
-        team1 = teams_with_images[i][0]
-        team2 = teams_with_images[i + 1][0]
-        team_pairs.append((team1, team2))
-
-    # If there is an odd number of teams, pair the last team with the second to last team
-    if len(teams_with_images) % 2 != 0:
-        team1 = teams_with_images[-1][0]
-        team2 = teams_with_images[-2][0]
-        team_pairs.append((team1, team2))
+    team_pairs = get_team_pairs(teams_with_images)
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
@@ -119,6 +123,30 @@ def create_matches(request):
 
     return {"message": "Matches created successfully"}
 
+def get_team_pairs_scrimmage(teams):
+    team_pairs = []
+    # Pair teams with the closest rolling winrate
+    for i in range(0, len(teams) - 1, 2):
+        team1 = teams[i][0]
+        team2 = teams[i + 1][0]
+        team_pairs.append((team1, team2))
+
+    # If there is an odd number of teams, pair the last team with the second to last team
+    if len(teams) % 2 != 0:
+        team1 = teams[-1][0]
+        team2 = teams[-2][0]
+        team_pairs.append((team1, team2))
+    return team_pairs
+
+# Every contestant plays every other contestant
+def get_team_pairs_round_robin(teams):
+    team_pairs = []
+    for i in range(len(teams)):
+        for j in range(i+1, len(teams)):
+            team1 = teams[i][0]
+            team2 = teams[j][0]
+            team_pairs.append((team1, team2))
+    return team_pairs
 
 def team_has_image(team_name):
     client = artifactregistry_v1.ArtifactRegistryClient()
@@ -136,9 +164,11 @@ def team_has_image(team_name):
         return False
 
 
-def create_match(team1, team2, apps_v1, core_v1, api_client):
+def create_match(team1, team2, apps_v1, core_v1, api_client, is_final = False):
     # Generate a unique match_id using a combination of team names and current timestamp
     match_id = f"{team1}-{team2}-{int(time.time())}"
+    if is_final:
+        match_id = f"final-{match_id}"
 
     # Create the bot Deployments and Services
     bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
@@ -154,8 +184,6 @@ def create_match(team1, team2, apps_v1, core_v1, api_client):
     )
     batch_v1 = client.BatchV1Api(api_client)
     batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
-
-    print("CREATED job")
 
     # Watch for the game engine job status
     w = watch.Watch()
