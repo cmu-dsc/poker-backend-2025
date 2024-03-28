@@ -25,8 +25,9 @@ export const convertTeamDaoToDto = (
  */
 export const convertTeamDaoWithStatsToDto = async (
   teamDao: TeamDao & { members?: { andrewId: string }[] },
+  lastXGames: undefined | number = undefined,
 ): Promise<TeamDto> => {
-  const teamMatches = await dbClient.teamMatchDao.findMany({
+  let teamMatches = await dbClient.teamMatchDao.findMany({
     where: {
       teamId: teamDao.githubUsername,
     },
@@ -39,6 +40,10 @@ export const convertTeamDaoWithStatsToDto = async (
       },
     },
   })
+
+  if (lastXGames) {
+    teamMatches = teamMatches.slice(0, lastXGames)
+  }
 
   const wonMatches = teamMatches.filter(teamMatch => {
     const { teamMatchDaos } = teamMatch.match

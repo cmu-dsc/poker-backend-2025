@@ -22,6 +22,27 @@ const teamValidator = z.object({
 })
 
 /**
+ * A validator for last x games number
+ */
+const lastXGamesValidator = z.number().optional()
+
+/**
+ * Validate the last x games number
+ * @param {number | undefined} lastXGames the last x games number to validate
+ * @throws {ApiError} if parsing fails
+ * @returns the parse value
+ */
+export const validateLastXGames = (
+  lastXGames: number | undefined,
+): number | undefined => {
+  try {
+    return lastXGamesValidator.parse(lastXGames)
+  } catch (error) {
+    throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
+  }
+}
+
+/**
  * Validate a team
  * @param {TeamDto} team a team to validate
  * @returns {TeamDto} the validated team

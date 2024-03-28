@@ -99,6 +99,12 @@ paths:
       summary: Get all teams
       description: Get all teams
       operationId: getAllTeams
+      parameters:
+        - in: query
+          name: lastGames
+          required: false
+          schema:
+            type: number
       responses:
         "200":
           description: OK
