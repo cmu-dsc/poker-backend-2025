@@ -1,3 +1,4 @@
+import datetime
 import time
 import functions_framework
 from kubernetes import client, watch
@@ -58,6 +59,7 @@ def create_matches_internal(get_team_pairs, stage):
     api_client = client.ApiClient()
     apps_v1 = client.AppsV1Api(api_client)
     core_v1 = client.CoreV1Api(api_client)
+    batch_v1 = client.BatchV1Api(api_client)
 
     # Set up the Cloud SQL Connector
     instance_connection_name = "pokerai-417521:us-east4:pokerai-sql"
@@ -114,27 +116,130 @@ def create_matches_internal(get_team_pairs, stage):
     # Prepare for matchmaking
     team_pairs = get_team_pairs(teams_with_images)
 
-    # Create a ThreadPoolExecutor to run matches concurrently
+    # Create all resources for each match
+    match_resources = []
+    for team1, team2 in team_pairs:
+        match_id = f"{stage}-{team1}-{team2}-{int(time.time())}"
+        bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
+        bot2_deployment, bot2_service, bot2_uuid = create_bot_resources(team2)
+        game_engine_job = create_game_engine_job(
+            team1, team2, match_id, bot1_uuid, bot2_uuid
+        )
+
+        apps_v1.create_namespaced_deployment(namespace="default", body=bot1_deployment)
+        apps_v1.create_namespaced_deployment(namespace="default", body=bot2_deployment)
+        core_v1.create_namespaced_service(namespace="default", body=bot1_service)
+        core_v1.create_namespaced_service(namespace="default", body=bot2_service)
+        batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
+
+        match_resources.append((team1, team2, bot1_uuid, bot2_uuid, match_id))
+
+    # Create a ThreadPoolExecutor to monitor matches concurrently
     with ThreadPoolExecutor() as executor:
-        # Submit match tasks to the executor
-        match_futures = [
+        # Submit monitoring tasks to the executor
+        monitoring_futures = [
             executor.submit(
-                create_match,
-                team1,
-                team2,
+                monitor_match,
                 apps_v1,
                 core_v1,
-                api_client,
-                stage,
+                batch_v1,
+                team1,
+                team2,
+                bot1_uuid,
+                bot2_uuid,
+                match_id,
             )
-            for team1, team2 in team_pairs
+            for team1, team2, bot1_uuid, bot2_uuid, match_id in match_resources
         ]
 
-    # Wait for all match futures to complete
-    for future in match_futures:
+    # Wait for all monitoring futures to complete
+    for future in monitoring_futures:
         future.result()
 
     return {"message": "Matches created successfully"}
+
+
+def monitor_match(
+    apps_v1, core_v1, batch_v1, team1, team2, bot1_uuid, bot2_uuid, match_id
+):
+    bot_deployments = {team1: False, team2: False}
+    failed_deployments = []
+    deployment_ages = {}
+
+    # Watch for bot deployment status
+    w_deployments = watch.Watch()
+    for event in w_deployments.stream(
+        apps_v1.list_namespaced_deployment,
+        namespace="default",
+        field_selector=f"metadata.name={team1}-bot-{bot1_uuid},metadata.name={team2}-bot-{bot2_uuid}",
+    ):
+        deployment = event["object"]
+        team_name = deployment.metadata.name.split("-bot-")[0]
+
+        # Calculate the age of the deployment
+        creation_timestamp = deployment.metadata.creation_timestamp
+        age = (
+            datetime.datetime.now(datetime.timezone.utc) - creation_timestamp
+        ).total_seconds()
+        deployment_ages[team_name] = age
+
+        if deployment.status.conditions:
+            for condition in deployment.status.conditions:
+                if (
+                    condition.type == "ReplicaFailure"
+                    and condition.reason == "CrashLoopBackOff"
+                    and age > 120  # Adjust the age threshold as needed
+                ):
+                    print(
+                        f"Bot deployment {deployment.metadata.name} failed due to CrashLoopBackOff"
+                    )
+                    failed_deployments.append(team_name)
+                    delete_bot_resources(
+                        apps_v1,
+                        core_v1,
+                        team_name,
+                        bot1_uuid if team_name == team1 else bot2_uuid,
+                    )
+                    break
+
+        if deployment.status.available_replicas == 1:
+            bot_deployments[team_name] = True
+
+        if all(bot_deployments.values()) or len(failed_deployments) > 0:
+            w_deployments.stop()
+            break
+
+    # If all bot deployments failed, delete the game engine job and return
+    if len(failed_deployments) == 2:
+        delete_game_engine_job(batch_v1, core_v1, match_id)
+        return "failed"
+
+    # Watch for game engine job status
+    w_job = watch.Watch()
+    for event in w_job.stream(
+        batch_v1.list_namespaced_job,
+        namespace="default",
+        field_selector=f"metadata.name=engine-{match_id}",
+    ):
+        job = event["object"]
+        if job.status.succeeded:
+            print(f"Match {match_id} succeeded")
+            break
+        if job.status.failed:
+            print(f"Match {match_id} failed")
+            break
+
+        # Delete bot resources for successful deployments
+    for team_name in bot_deployments.keys():
+        if team_name not in failed_deployments:
+            delete_bot_resources(
+                apps_v1,
+                core_v1,
+                team_name,
+                bot1_uuid if team_name == team1 else bot2_uuid,
+            )
+
+    delete_game_engine_job(batch_v1, core_v1, match_id)
 
 
 def get_team_pairs_scrimmage(teams):
@@ -180,64 +285,20 @@ def team_has_image(team_name):
         return False
 
 
-def create_match(team1, team2, apps_v1, core_v1, api_client, stage):
-    # Generate a unique match_id using a combination of team names and current timestamp
-    match_id = f"{stage}-{team1}-{team2}-{int(time.time())}"
-    print(f"Creating match {match_id}")
-
-    # Create the bot Deployments and Services
-    bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
-    bot2_deployment, bot2_service, bot2_uuid = create_bot_resources(team2)
-    apps_v1.create_namespaced_deployment(namespace="default", body=bot1_deployment)
-    apps_v1.create_namespaced_deployment(namespace="default", body=bot2_deployment)
-    core_v1.create_namespaced_service(namespace="default", body=bot1_service)
-    core_v1.create_namespaced_service(namespace="default", body=bot2_service)
-
-    # Create the game engine Job
-    game_engine_job = create_game_engine_job(
-        team1, team2, match_id, bot1_uuid, bot2_uuid
-    )
-    batch_v1 = client.BatchV1Api(api_client)
-    batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
-
-    # Watch for the game engine job status
-    w = watch.Watch()
-    for event in w.stream(
-        batch_v1.list_namespaced_job,
-        namespace="default",
-        field_selector=f"metadata.name=engine-{match_id}",
-    ):
-        job = event["object"]
-        if job.status.succeeded:
-            print(f"Match {match_id} succeeded")
-            w.stop()
-            break
-        if job.status.failed:
-            print(f"Match {match_id} failed")
-            w.stop()
-            break
-
-    # Delete the bot Deployments and Services
+def delete_bot_resources(apps_v1, core_v1, team_name, bot_uuid):
     apps_v1.delete_namespaced_deployment(
-        name=f"{team1}-bot-{bot1_uuid}", namespace="default"
-    )
-    apps_v1.delete_namespaced_deployment(
-        name=f"{team2}-bot-{bot2_uuid}", namespace="default"
+        name=f"{team_name}-bot-{bot_uuid}", namespace="default"
     )
     core_v1.delete_namespaced_service(
-        name=f"{team1}-bot-service-{bot1_uuid}", namespace="default"
+        name=f"{team_name}-bot-service-{bot_uuid}", namespace="default"
     )
-    core_v1.delete_namespaced_service(
-        name=f"{team2}-bot-service-{bot2_uuid}", namespace="default"
-    )
+
+
+def delete_game_engine_job(batch_v1, core_v1, match_id):
     batch_v1.delete_namespaced_job(name=f"engine-{match_id}", namespace="default")
-
-    # List the Pods associated with the Job
     pod_list = core_v1.list_namespaced_pod(
         namespace="default", label_selector=f"job-name=engine-{match_id}"
     )
-
-    # Delete each Pod individually
     for pod in pod_list.items:
         core_v1.delete_namespaced_pod(name=pod.metadata.name, namespace="default")
 
