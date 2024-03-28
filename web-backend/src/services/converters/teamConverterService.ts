@@ -41,9 +41,13 @@ export const convertTeamDaoWithStatsToDto = async (
     },
   })
 
+  console.log(teamMatches)
+
   if (lastXGames) {
-    teamMatches = teamMatches.slice(0, lastXGames)
+    teamMatches = teamMatches.slice(lastXGames * -1)
   }
+
+  
 
   const wonMatches = teamMatches.filter(teamMatch => {
     const { teamMatchDaos } = teamMatch.match
