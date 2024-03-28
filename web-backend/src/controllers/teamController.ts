@@ -10,6 +10,7 @@ import {
   updateTeamByGithubUsername,
 } from 'src/services/teamService'
 import {
+  validateLastXGames,
   validateTeam,
   validateTeamName,
 } from 'src/services/validators/teamValidatorService'
@@ -123,8 +124,10 @@ export const getTeam = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<TeamDto[]>,
 ) => {
+  const lastXGames = validateLastXGames(req.query.lastGames)
+
   const teams = await getAllTeams()
-  const teamsDto = await Promise.all(teams.map(convertTeamDaoWithStatsToDto))
+  const teamsDto = await Promise.all(teams.map(t => convertTeamDaoWithStatsToDto(t, lastXGames)))
 
   res.status(200).json(teamsDto)
 }

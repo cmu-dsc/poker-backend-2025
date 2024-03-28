@@ -33,13 +33,19 @@ export class TeamService {
     /**
      * Get all teams
      * Get all teams
+     * @param lastGames
      * @returns TeamDto OK
      * @throws ApiError
      */
-    public static getAllTeams(): CancelablePromise<Array<TeamDto>> {
+    public static getAllTeams(
+        lastGames?: number,
+    ): CancelablePromise<Array<TeamDto>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/team',
+            query: {
+                'lastGames': lastGames,
+            },
         });
     }
     /**
