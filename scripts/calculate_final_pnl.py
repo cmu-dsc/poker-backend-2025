@@ -29,7 +29,7 @@ def calculate_margin_of_victory(matches, T):
         j, jscore = scores[1]
         mov[i][j] = iscore - jscore # confirm?
         mov[j][i] = -mov[i][j]
-        return
+    return mov
 
 '''
 Returns (T, idxs, matches), where:
@@ -42,20 +42,49 @@ Returns (T, idxs, matches), where:
 def parse_matches(matches_rows):
     match_dict = {}
     idx = 0
-    idxs = {}
+    team_to_idxs = {}
+    idxs_to_team = {}
 
     for row in matches_rows:
         teamId = row['teamId']
         matchId = row['matchId']
-        score = row['bankroll']
+        score = int(row['bankroll'])
         if matchId not in match_dict:
             match_dict[matchId] = []
-        if teamId not in idxs:
-            idxs[teamId] = idx
+        if teamId not in team_to_idxs:
+            team_to_idxs[teamId] = idx
+            idxs_to_team[idx] = teamId
             idx += 1
-        match_dict[matchId].append((idxs[teamId], score))
+        match_dict[matchId].append((team_to_idxs[teamId], score))
 
-    return idx, idxs, match_dict.values()
+    return idx, team_to_idxs, idxs_to_team, match_dict.values()
+
+'''
+Same as parse_matches but takes .csv exported from TeamMatchDao
+NOTE: Must manually add "id,matchId,teamId,bankroll" as the first line in the
+csv file, so that this script knows the names of each column.
+'''
+def parse_matches_csv(filename):
+    match_dict = {}
+    idx = 0
+    team_to_idxs = {}
+    idxs_to_team = {}
+
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            teamId = row['teamId']
+            matchId = row['matchId']
+            score = int(row['bankroll'])
+            if matchId not in match_dict:
+                match_dict[matchId] = []
+            if teamId not in team_to_idxs:
+                team_to_idxs[teamId] = idx
+                idxs_to_team[idx] = teamId
+                idx += 1
+            match_dict[matchId].append((team_to_idxs[teamId], score))
+
+    return idx, team_to_idxs, idxs_to_team, match_dict.values()
 
 def get_credentials():
     try:
@@ -115,6 +144,10 @@ def get_matches():
             print(f"Error while interacting with the database: {str(e)}")
             db_conn.rollback()
     
-T, idxs, matches = parse_matches(get_matches())
+#T, idxs, matches = parse_matches(get_matches())
+T, team_to_idxs, idxs_to_team, matches = parse_matches_csv('./scripts/test/matches_test.csv')
 mov = calculate_margin_of_victory(matches, T)
-print(find_weighted_pnl(mov))
+results = find_weighted_pnl(mov)
+
+for pnl, idx in results:
+    print(f"{idxs_to_team[idx]}:\t\t{pnl}")
