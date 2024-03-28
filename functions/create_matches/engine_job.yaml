@@ -4,6 +4,7 @@ metadata:
   name: engine-{{MATCH_ID}}
 spec:
   ttlSecondsAfterFinished: 15
+  activeDeadlineSeconds: 1000
   template:
     spec:
       initContainers:

@@ -10,11 +10,13 @@ import sqlalchemy
 import uuid
 import yaml
 
+
 # Create matches for regular scrimmage
 # Pairs teams with close win rates
 @functions_framework.http
 def create_matches(request):
     create_matches_internal(get_team_pairs_scrimmage, "scrim")
+
 
 # Create matches for stage 1 of final tournament
 # Round robin between all teams (or top K > 8 teams from scrimmage, prioritized by win rate over past 6 games)
@@ -24,6 +26,7 @@ def create_matches(request):
 def create_matches_final_stage1(request):
     create_matches_internal(get_team_pairs_round_robin, "final1")
 
+
 # Create matches for stage 2 of final tournament
 # Round robin between top 8 teams from stage 1
 # TODO: In calculate_final_pnl.py, need some way of marking the top 8 teams from stage 1, so that
@@ -31,6 +34,7 @@ def create_matches_final_stage1(request):
 @functions_framework.http
 def create_matches_final_stage_2(request):
     create_matches_internal(get_team_pairs_round_robin, "final2")
+
 
 # Shared logic for create_matches and create_matches_final
 # @param get_team_pairs: Function that pairs teams (scrimmage, round_robin, etc)
@@ -102,7 +106,7 @@ def create_matches_internal(get_team_pairs, stage):
                 GROUP BY t.githubUsername
                 ORDER BY rolling_winrate DESC
             """)
-            teams = db_conn.execute(query).fetchall() 
+            teams = db_conn.execute(query).fetchall()
 
     # Filter out teams without valid images
     teams_with_images = [team for team in teams if team_has_image(team[0])]
@@ -132,6 +136,7 @@ def create_matches_internal(get_team_pairs, stage):
 
     return {"message": "Matches created successfully"}
 
+
 def get_team_pairs_scrimmage(teams):
     team_pairs = []
     # Pair teams with the closest rolling winrate
@@ -147,15 +152,17 @@ def get_team_pairs_scrimmage(teams):
         team_pairs.append((team1, team2))
     return team_pairs
 
+
 # Every contestant plays every other contestant
 def get_team_pairs_round_robin(teams):
     team_pairs = []
     for i in range(len(teams)):
-        for j in range(i+1, len(teams)):
+        for j in range(i + 1, len(teams)):
             team1 = teams[i][0]
             team2 = teams[j][0]
             team_pairs.append((team1, team2))
     return team_pairs
+
 
 def team_has_image(team_name):
     client = artifactregistry_v1.ArtifactRegistryClient()
