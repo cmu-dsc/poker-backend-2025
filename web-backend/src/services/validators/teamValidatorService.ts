@@ -24,7 +24,7 @@ const teamValidator = z.object({
 /**
  * A validator for last x games number
  */
-const lastXGamesValidator = z.number().optional()
+const lastXGamesValidator = z.coerce.number().nullish().transform( x => x ? x : undefined )
 
 /**
  * Validate the last x games number
@@ -33,7 +33,7 @@ const lastXGamesValidator = z.number().optional()
  * @returns the parse value
  */
 export const validateLastXGames = (
-  lastXGames: number | undefined,
+  lastXGames: string | undefined,
 ): number | undefined => {
   try {
     return lastXGamesValidator.parse(lastXGames)
