@@ -124,7 +124,7 @@ export const getTeam = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<TeamDto[]>,
 ) => {
-  const lastXGames = validateLastXGames(req.query.lastGames)
+  const lastXGames = validateLastXGames(Number(req.query.lastGames))
 
   const teams = await getAllTeams()
   const teamsDto = await Promise.all(teams.map(t => convertTeamDaoWithStatsToDto(t, lastXGames)))
