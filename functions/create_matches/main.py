@@ -183,6 +183,7 @@ def team_has_image(team_name):
 def create_match(team1, team2, apps_v1, core_v1, api_client, stage):
     # Generate a unique match_id using a combination of team names and current timestamp
     match_id = f"{stage}-{team1}-{team2}-{int(time.time())}"
+    print(f"Creating match {match_id}")
 
     # Create the bot Deployments and Services
     bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
@@ -207,7 +208,12 @@ def create_match(team1, team2, apps_v1, core_v1, api_client, stage):
         field_selector=f"metadata.name=engine-{match_id}",
     ):
         job = event["object"]
-        if job.status.succeeded or job.status.failed:
+        if job.status.succeeded:
+            print(f"Match {match_id} succeeded")
+            w.stop()
+            break
+        if job.status.failed:
+            print(f"Match {match_id} failed")
             w.stop()
             break
 
