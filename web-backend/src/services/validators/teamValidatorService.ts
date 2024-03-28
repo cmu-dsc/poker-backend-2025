@@ -8,13 +8,14 @@ import { z } from 'zod'
 const teamNameValidator = z
   .string()
   .min(1)
+  .max(39)
   .regex(/^[a-zA-Z0-9-]+$/)
 
 /**
  * A validator for the team dto
  */
 const teamValidator = z.object({
-  githubUsername: teamNameValidator,
+  githubUsername: teamNameValidator.toLowerCase(),
   members: z.array(z.string()).max(4).min(1),
   wins: z.number().int().min(0).optional(),
   losses: z.number().int().min(0).optional(),
