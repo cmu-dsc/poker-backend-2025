@@ -90,7 +90,7 @@ async function createServiceAccountAndResources(githubUsername: string) {
   const serviceAccountId = username
   const displayName = username
   const serviceAccountEmail = `${username}@${projectId}.iam.gserviceaccount.com`
-  const githubRepoRef = `${username}/poker-engine-2024`
+  const githubRepoRef = `${githubUsername}/poker-engine-2024`
   const workloadIdentityPoolId =
     'projects/979321260256/locations/global/workloadIdentityPools/github'
   const location = 'us-east4'
