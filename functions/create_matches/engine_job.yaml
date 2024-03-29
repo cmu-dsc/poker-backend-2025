@@ -13,20 +13,20 @@ spec:
         command: ['sh', '-c', 'until nc -z {{TEAM1}}-bot-service-{{BOT1_UUID}} 50051; do echo waiting for bot1; sleep 2; done;']
         resources:
           requests:
-            cpu: "100m"
+            cpu: "50m"
             memory: "64Mi"
           limits:
-            cpu: "200m"
+            cpu: "100m"
             memory: "128Mi"
       - name: wait-for-bot2
         image: busybox
         command: ['sh', '-c', 'until nc -z {{TEAM2}}-bot-service-{{BOT2_UUID}} 50051; do echo waiting for bot2; sleep 2; done;']
         resources:
           requests:
-            cpu: "100m"
+            cpu: "50m"
             memory: "64Mi"
           limits:
-            cpu: "200m"
+            cpu: "100m"
             memory: "128Mi"
       containers:
       - name: engine
@@ -64,7 +64,7 @@ spec:
             cpu: "100m"
             memory: "100Mi"
           limits:
-            cpu: "500m"
+            cpu: "250m"
             memory: "200Mi"
       restartPolicy: OnFailure
       volumes:
