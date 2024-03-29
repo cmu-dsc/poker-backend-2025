@@ -15,7 +15,7 @@ import yaml
 # that use the bot of STRESS_TEST_TEAMNAME. Plays these teams against each other
 STRESS_TEST = True
 STRESS_TEST_COUNT = 100
-STRESS_TEST_TEAMNAME = "jespiron"
+STRESS_TEST_TEAMNAME = "all-in-bot"
 
 
 # Create matches for regular scrimmage
