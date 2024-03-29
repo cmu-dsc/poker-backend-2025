@@ -178,6 +178,7 @@ def monitor_match(
     failed_deployments = []
     deployment_ages = {}
 
+    '''
     # Watch for bot deployment status
     w_deployments = watch.Watch()
     for event in w_deployments.stream(
@@ -225,6 +226,7 @@ def monitor_match(
     if len(failed_deployments) >= 2:
         delete_game_engine_job(batch_v1, core_v1, match_id)
         return "failed"
+    '''
 
     # Watch for game engine job status
     w_job = watch.Watch()
@@ -318,15 +320,16 @@ def delete_game_engine_job(batch_v1, core_v1, match_id):
 def create_bot_resources(team_name):
     # Generate a unique UUID for the bot resources
     bot_uuid = uuid.uuid4().hex[:8]
-
+    
+    image_name = team_name
     if STRESS_TEST:
-        team_name = STRESS_TEST_TEAMNAME
+        image_name = STRESS_TEST_TEAMNAME
 
     with open("bot_deployment.yaml") as f:
         deployment_yaml = f.read()
     deployment_yaml = deployment_yaml.replace("{{TEAM_NAME}}", team_name).replace(
         "{{BOT_UUID}}", bot_uuid
-    )
+    ).replace("{{IMAGE_NAME}}", image_name)
     deployment = yaml.safe_load(deployment_yaml)
 
     with open("bot_service.yaml") as f:

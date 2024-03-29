@@ -15,7 +15,7 @@ spec:
       backoffLimit: 3
       containers:
       - name: {{TEAM_NAME}}-bot
-        image: us-east4-docker.pkg.dev/pokerai-417521/{{TEAM_NAME}}/pokerbot:latest
+        image: us-east4-docker.pkg.dev/pokerai-417521/{{IMAGE_NAME}}/pokerbot:latest
         ports:
         - containerPort: 50051
         resources:
