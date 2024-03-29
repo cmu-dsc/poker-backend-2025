@@ -11,6 +11,12 @@ import sqlalchemy
 import uuid
 import yaml
 
+# Generates STRESS_TEST_COUNT teams, named STRESS_TEST_TEAMNAME{0-STRESS_TEST_COUNT},
+# that use the bot of STRESS_TEST_TEAMNAME. Plays these teams against each other
+STRESS_TEST = True
+STRESS_TEST_COUNT = 100
+STRESS_TEST_TEAMNAME = "jespiron"
+
 
 # Create matches for regular scrimmage
 # Pairs teams with close win rates
@@ -113,6 +119,13 @@ def create_matches_internal(get_team_pairs, stage):
     # Filter out teams without valid images
     teams_with_images = [team for team in teams if team_has_image(team[0])]
 
+    if STRESS_TEST:
+        for i in range(STRESS_TEST_COUNT):
+            if(len(teams_with_images) == STRESS_TEST_COUNT):
+                break
+            print(f"{STRESS_TEST_TEAMNAME}{i}")
+            teams_with_images.append((f"{STRESS_TEST_TEAMNAME}{i}", None))
+
     # Prepare for matchmaking
     team_pairs = get_team_pairs(teams_with_images)
 
@@ -156,8 +169,7 @@ def create_matches_internal(get_team_pairs, stage):
     for future in monitoring_futures:
         future.result()
 
-    return {"message": "Matches created successfully"}
-
+    return {"message": "Matches created successfully"}    
 
 def monitor_match(
     apps_v1, core_v1, batch_v1, team1, team2, bot1_uuid, bot2_uuid, match_id
@@ -210,7 +222,7 @@ def monitor_match(
             break
 
     # If all bot deployments failed, delete the game engine job and return
-    if len(failed_deployments) == 2:
+    if len(failed_deployments) >= 2:
         delete_game_engine_job(batch_v1, core_v1, match_id)
         return "failed"
 
@@ -306,6 +318,9 @@ def delete_game_engine_job(batch_v1, core_v1, match_id):
 def create_bot_resources(team_name):
     # Generate a unique UUID for the bot resources
     bot_uuid = uuid.uuid4().hex[:8]
+
+    if STRESS_TEST:
+        team_name = STRESS_TEST_TEAMNAME
 
     with open("bot_deployment.yaml") as f:
         deployment_yaml = f.read()
