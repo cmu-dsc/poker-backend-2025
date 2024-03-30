@@ -13,7 +13,7 @@ import random
 
 # Generates STRESS_TEST_COUNT teams, named STRESS_TEST_TEAMNAME{0-STRESS_TEST_COUNT},
 # that use the bot of STRESS_TEST_TEAMNAME. Plays these teams against each other
-STRESS_TEST = True
+STRESS_TEST = False
 STRESS_TEST_COUNT = 100
 STRESS_TEST_TEAMNAME = "all-in-bot"
 
@@ -92,26 +92,9 @@ def create_matches_internal(get_team_pairs, stage):
         with pool.connect() as db_conn:
             # Query the TeamDao table to get all teams and their rolling winrate
             query = sqlalchemy.text("""
-                SELECT t.githubUsername, 
-                    COALESCE(SUM(CASE WHEN tm.teamId = t.githubUsername AND tm.bankroll > (
-                                        SELECT tm2.bankroll
-                                        FROM TeamMatchDao tm2
-                                        WHERE tm2.matchId = tm.matchId AND tm2.teamId <> t.githubUsername
-                                    ) THEN 1 ELSE 0 END) / 
-                            NULLIF(COUNT(tm.id), 0), 0) AS rolling_winrate
+                SELECT t.githubUsername
                 FROM TeamDao t
-                LEFT JOIN (
-                    SELECT tm.*
-                    FROM TeamMatchDao tm
-                    JOIN (
-                        SELECT matchId
-                        FROM MatchDao
-                        ORDER BY timestamp DESC
-                        LIMIT 5
-                    ) m ON tm.matchId = m.matchId
-                ) tm ON t.githubUsername = tm.teamId
-                GROUP BY t.githubUsername
-                ORDER BY rolling_winrate DESC
+                ORDER BY RAND()
             """)
             teams = db_conn.execute(query).fetchall()
 
@@ -128,7 +111,7 @@ def create_matches_internal(get_team_pairs, stage):
     # Prepare for matchmaking
     team_pairs = get_team_pairs(teams_with_images)
     random.shuffle(team_pairs)
-    team_pairs = team_pairs[:30]
+    team_pairs = team_pairs[:min(30, len(team_pairs))]
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
