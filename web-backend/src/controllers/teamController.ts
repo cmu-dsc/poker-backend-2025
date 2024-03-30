@@ -31,13 +31,15 @@ export const postTeam = async (
   res: Response<TeamDto>,
 ) => {
   const team: TeamDto = validateTeam(req.body)
+  const githubUsername: string = team.githubUsername
+  team.githubUsername = team.githubUsername.toLowerCase()
 
   await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
   const createdTeam: TeamDao = await createTeam(team)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
   try {
-    await createServiceAccountAndResources(team.githubUsername)
+    await createServiceAccountAndResources(githubUsername)
   } catch (error) {
     console.error(
       'An error occurred while creating service account and resources:',
