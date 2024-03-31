@@ -4,15 +4,30 @@ metadata:
   name: engine-{{MATCH_ID}}
 spec:
   ttlSecondsAfterFinished: 15
+  activeDeadlineSeconds: 1000
   template:
     spec:
       initContainers:
       - name: wait-for-bot1
         image: busybox
         command: ['sh', '-c', 'until nc -z {{TEAM1}}-bot-service-{{BOT1_UUID}} 50051; do echo waiting for bot1; sleep 2; done;']
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
       - name: wait-for-bot2
         image: busybox
         command: ['sh', '-c', 'until nc -z {{TEAM2}}-bot-service-{{BOT2_UUID}} 50051; do echo waiting for bot2; sleep 2; done;']
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
       containers:
       - name: engine
         image: us-east4-docker.pkg.dev/pokerai-417521/cmu-dsc/engine:latest
@@ -44,6 +59,13 @@ spec:
         volumeMounts:
         - name: logs
           mountPath: /usr/src/app/logs
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+          limits:
+            cpu: "250m"
+            memory: "200Mi"
       restartPolicy: OnFailure
       volumes:
       - name: logs

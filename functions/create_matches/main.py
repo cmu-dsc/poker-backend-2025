@@ -9,10 +9,45 @@ from concurrent.futures import ThreadPoolExecutor
 import sqlalchemy
 import uuid
 import yaml
+import random
+
+# Generates STRESS_TEST_COUNT teams, named STRESS_TEST_TEAMNAME{0-STRESS_TEST_COUNT},
+# that use the bot of STRESS_TEST_TEAMNAME. Plays these teams against each other
+STRESS_TEST = False
+STRESS_TEST_COUNT = 100
+STRESS_TEST_TEAMNAME = "all-in-bot"
 
 
+# Create matches for regular scrimmage
+# Pairs teams with close win rates
 @functions_framework.http
 def create_matches(request):
+    create_matches_internal(get_team_pairs_scrimmage, "scrim")
+
+
+# Create matches for stage 1 of final tournament
+# Round robin between all teams (or top K > 8 teams from scrimmage, prioritized by win rate over past 6 games)
+# Matches will be tagged with prefix `final1-` in their matchId, so that our calculate_final_pnl script can
+# identify them.
+@functions_framework.http
+def create_matches_final_stage1(request):
+    create_matches_internal(get_team_pairs_round_robin, "final1")
+
+
+# Create matches for stage 2 of final tournament
+# Round robin between top 8 teams from stage 1
+# TODO: In calculate_final_pnl.py, need some way of marking the top 8 teams from stage 1, so that
+#       we are able to pull them here.
+@functions_framework.http
+def create_matches_final_stage_2(request):
+    create_matches_internal(get_team_pairs_round_robin, "final2")
+
+
+# Shared logic for create_matches and create_matches_final
+# @param get_team_pairs: Function that pairs teams (scrimmage, round_robin, etc)
+# @param stage: Prefix that gets prepended to the matchIds, to identify which
+#               stage of the game out of {"scrim", "final1", "final2"}.
+def create_matches_internal(get_team_pairs, stage):
     # Use the Application Default Credentials (ADC)
     credentials = compute_engine.Credentials()
 
@@ -57,46 +92,26 @@ def create_matches(request):
         with pool.connect() as db_conn:
             # Query the TeamDao table to get all teams and their rolling winrate
             query = sqlalchemy.text("""
-                SELECT t.githubUsername, 
-                    COALESCE(SUM(CASE WHEN tm.teamId = t.githubUsername AND tm.bankroll > (
-                                        SELECT tm2.bankroll
-                                        FROM TeamMatchDao tm2
-                                        WHERE tm2.matchId = tm.matchId AND tm2.teamId <> t.githubUsername
-                                    ) THEN 1 ELSE 0 END) / 
-                            NULLIF(COUNT(tm.id), 0), 0) AS rolling_winrate
+                SELECT t.githubUsername
                 FROM TeamDao t
-                LEFT JOIN (
-                    SELECT tm.*
-                    FROM TeamMatchDao tm
-                    JOIN (
-                        SELECT matchId
-                        FROM MatchDao
-                        ORDER BY timestamp DESC
-                        LIMIT 5
-                    ) m ON tm.matchId = m.matchId
-                ) tm ON t.githubUsername = tm.teamId
-                GROUP BY t.githubUsername
-                ORDER BY rolling_winrate DESC
+                ORDER BY RAND()
             """)
             teams = db_conn.execute(query).fetchall()
 
     # Filter out teams without valid images
     teams_with_images = [team for team in teams if team_has_image(team[0])]
 
+    if STRESS_TEST:
+        for i in range(STRESS_TEST_COUNT):
+            if len(teams_with_images) == STRESS_TEST_COUNT:
+                break
+            print(f"{STRESS_TEST_TEAMNAME}{i}")
+            teams_with_images.append((f"{STRESS_TEST_TEAMNAME}{i}", None))
+
     # Prepare for matchmaking
-    team_pairs = []
-
-    # Pair teams with the closest rolling winrate
-    for i in range(0, len(teams_with_images) - 1, 2):
-        team1 = teams_with_images[i][0]
-        team2 = teams_with_images[i + 1][0]
-        team_pairs.append((team1, team2))
-
-    # If there is an odd number of teams, pair the last team with the second to last team
-    if len(teams_with_images) % 2 != 0:
-        team1 = teams_with_images[-1][0]
-        team2 = teams_with_images[-2][0]
-        team_pairs.append((team1, team2))
+    team_pairs = get_team_pairs(teams_with_images)
+    random.shuffle(team_pairs)
+    team_pairs = team_pairs[:min(30, len(team_pairs))]
 
     # Create a ThreadPoolExecutor to run matches concurrently
     with ThreadPoolExecutor() as executor:
@@ -109,6 +124,7 @@ def create_matches(request):
                 apps_v1,
                 core_v1,
                 api_client,
+                stage,
             )
             for team1, team2 in team_pairs
         ]
@@ -118,6 +134,33 @@ def create_matches(request):
         future.result()
 
     return {"message": "Matches created successfully"}
+
+
+def get_team_pairs_scrimmage(teams):
+    team_pairs = []
+    # Pair teams with the closest rolling winrate
+    for i in range(0, len(teams) - 1, 2):
+        team1 = teams[i][0]
+        team2 = teams[i + 1][0]
+        team_pairs.append((team1, team2))
+
+    # If there is an odd number of teams, pair the last team with the second to last team
+    if len(teams) % 2 != 0:
+        team1 = teams[-1][0]
+        team2 = teams[-2][0]
+        team_pairs.append((team1, team2))
+    return team_pairs
+
+
+# Every contestant plays every other contestant
+def get_team_pairs_round_robin(teams):
+    team_pairs = []
+    for i in range(len(teams)):
+        for j in range(i + 1, len(teams)):
+            team1 = teams[i][0]
+            team2 = teams[j][0]
+            team_pairs.append((team1, team2))
+    return team_pairs
 
 
 def team_has_image(team_name):
@@ -136,9 +179,10 @@ def team_has_image(team_name):
         return False
 
 
-def create_match(team1, team2, apps_v1, core_v1, api_client):
+def create_match(team1, team2, apps_v1, core_v1, api_client, stage):
     # Generate a unique match_id using a combination of team names and current timestamp
-    match_id = f"{team1}-{team2}-{int(time.time())}"
+    match_id = f"{stage}-{team1}-{team2}-{int(time.time())}"
+    print(f"Creating match {match_id}")
 
     # Create the bot Deployments and Services
     bot1_deployment, bot1_service, bot1_uuid = create_bot_resources(team1)
@@ -155,8 +199,6 @@ def create_match(team1, team2, apps_v1, core_v1, api_client):
     batch_v1 = client.BatchV1Api(api_client)
     batch_v1.create_namespaced_job(namespace="default", body=game_engine_job)
 
-    print("CREATED job")
-
     # Watch for the game engine job status
     w = watch.Watch()
     for event in w.stream(
@@ -165,7 +207,12 @@ def create_match(team1, team2, apps_v1, core_v1, api_client):
         field_selector=f"metadata.name=engine-{match_id}",
     ):
         job = event["object"]
-        if job.status.succeeded or job.status.failed:
+        if job.status.succeeded:
+            print(f"Match {match_id} succeeded")
+            w.stop()
+            break
+        if job.status.failed:
+            print(f"Match {match_id} failed")
             w.stop()
             break
 
@@ -198,10 +245,16 @@ def create_bot_resources(team_name):
     # Generate a unique UUID for the bot resources
     bot_uuid = uuid.uuid4().hex[:8]
 
+    image_name = team_name
+    if STRESS_TEST:
+        image_name = STRESS_TEST_TEAMNAME
+
     with open("bot_deployment.yaml") as f:
         deployment_yaml = f.read()
-    deployment_yaml = deployment_yaml.replace("{{TEAM_NAME}}", team_name).replace(
-        "{{BOT_UUID}}", bot_uuid
+    deployment_yaml = (
+        deployment_yaml.replace("{{TEAM_NAME}}", team_name)
+        .replace("{{BOT_UUID}}", bot_uuid)
+        .replace("{{IMAGE_NAME}}", image_name)
     )
     deployment = yaml.safe_load(deployment_yaml)
 
