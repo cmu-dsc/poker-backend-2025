@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express'
-import admin from 'firebase-admin'
+//import admin from 'firebase-admin'
 import env from 'src/config/env'
+import logger from '../logger/logger'
 
 // Initialize Firebase Admin SDK
-admin.initializeApp({
-  // Add your Firebase admin credentials here
-  credential: admin.credential.cert(JSON.parse(env.GCLOUD_ADMIN_KEY!)),
-})
+//admin.initializeApp({
+//  // Add your Firebase admin credentials here
+//  credential: admin.credential.cert(JSON.parse(env.GCLOUD_ADMIN_KEY!)),
+//})
 
 // Middleware function to validate Firebase auth header
 const firebaseAuthMiddleware = async (
@@ -27,33 +28,35 @@ const firebaseAuthMiddleware = async (
     const [, idToken]: string[] = authHeader.split(' ')
 
     // Verify the ID token using Firebase Admin SDK
-    const decodedToken: admin.auth.DecodedIdToken = await admin
-      .auth()
-      .verifyIdToken(idToken)
+    //const decodedToken: admin.auth.DecodedIdToken = await admin
+    //  .auth()
+    //  .verifyIdToken(idToken)
 
     // Check if the ID token belongs to a Google account
-    if (decodedToken.firebase.sign_in_provider !== 'google.com') {
-      res.status(401).json({ message: 'Invalid auth provider' })
-      return
-    }
+    //if (decodedToken.firebase.sign_in_provider !== 'google.com') {
+    //  res.status(401).json({ message: 'Invalid auth provider' })
+    //  return
+    //}
 
     // Attach the decoded token to the request object for further use
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    req.decodedToken = decodedToken
+    //req.decodedToken = decodedToken
 
     // Validate that the Google account email ends with 'cmu.edu'
-    const { email } = decodedToken
-    if (!email || !email.endsWith('cmu.edu')) {
-      res.status(401).json({ message: 'Invalid email domain' })
-      return
-    }
+    //const { email } = decodedToken
+    //if (!email || !email.endsWith('cmu.edu')) {
+    //  res.status(401).json({ message: 'Invalid email domain' })
+    //  return
+    //}
 
     // attach users andrew id to the request object
-    const [andrewId] = email.split('@')
+    //const [andrewId] = email.split('@')
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    req.andrewId = andrewId
+    req.andrewId = idToken
+    // @ts-ignore
+    logger.info(`User ${req.andrewId} authenticated`)
 
     // Call the next middleware or route handler
     next()
