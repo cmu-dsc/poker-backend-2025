@@ -68,31 +68,54 @@ To test locally, run cloud-sql-proxy using the [script](/setupproxy.sh).
 The data is stored in MySQL, the schema is as follows:
 
 ```mermaid
-
 classDiagram
     class UserDao {
-        + andrewId: string
-        + teamDaoGithubUsername: string?
+        +Int id
+        +String email
+        +Int permissionLevelId
+        +Int? teamId
     }
-
     class TeamDao {
-        + githubUsername: string
+        +Int id
+        +String name
+        +Boolean deleted
     }
-
     class TeamMatchDao {
-        + id: int
-        + matchId: string
-        + teamId: string
-        + bankroll: int
+        +Int id
+        +Int matchId
+        +Int teamId
+        +Int bankroll
     }
-
     class MatchDao {
-        + matchId: string
-        + timestamp: DateTime
+        +Int matchId
+        +DateTime timestamp
+    }
+    class TeamInviteDao {
+        +Int id
+        +Int teamId
+        +DateTime sendAt
+        +Int userId
+    }
+    class MatchRequestDao {
+        +Int id
+        +Int? matchId
+        +Int requestingTeamId
+        +Int requestedTeamId
+        +Boolean accepted
+    }
+    class Role {
+        +Int id
+        +String value
     }
 
-    UserDao "1..4" --> "1" TeamDao : "is a member of"
-    TeamDao "1" --> "*" TeamMatchDao : "participates in"
-    TeamMatchDao "1" -- "1" MatchDao : "associated with"
+    UserDao "1" -- "0..1" TeamDao
+    UserDao "1" -- "0..*" TeamInviteDao
+    UserDao "1" -- "1" Role
+    TeamDao "1" -- "0..*" TeamMatchDao
+    TeamDao "1" -- "0..*" TeamInviteDao
+    TeamDao "1" -- "0..*" MatchRequestDao : requesting
+    TeamDao "1" -- "0..*" MatchRequestDao : requested
+    MatchDao "1" -- "0..*" TeamMatchDao
+    MatchDao "1" -- "0..*" MatchRequestDao
 
 ```

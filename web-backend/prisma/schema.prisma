@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,28 +8,64 @@ datasource db {
 }
 
 model UserDao {
-  andrewId              String   @id @unique
-  TeamDao               TeamDao? @relation(fields: [teamDaoGithubUsername], references: [githubUsername])
-  teamDaoGithubUsername String?
+  id                Int             @id @unique @default(autoincrement())
+  email             String          @unique
+  permissionLevel   Role            @relation(fields: [permissionLevelId], references: [id])
+  permissionLevelId Int             @default(1)
+  TeamDao           TeamDao?        @relation(fields: [teamId], references: [id])
+  teamId            Int?
+  invites           TeamInviteDao[]
 }
 
 model TeamDao {
-  githubUsername String         @id @unique
-  members        UserDao[]
-  TeamMatchDao   TeamMatchDao[]
+  id              Int               @id @unique @default(autoincrement())
+  members         UserDao[]
+  TeamInviteDao   TeamInviteDao[]
+  name            String
+  deleted         Boolean           @default(false)
+  TeamMatchDao    TeamMatchDao[]
+  requestingMatches MatchRequestDao[] @relation("RequestingTeam")
+  requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
 }
 
 model TeamMatchDao {
-  id       Int      @id @default(autoincrement()) @unique
+  id       Int      @id @unique @default(autoincrement())
   match    MatchDao @relation(fields: [matchId], references: [matchId])
-  matchId  String
-  team     TeamDao  @relation(fields: [teamId], references: [githubUsername])
-  teamId   String
+  matchId  Int
+  team     TeamDao  @relation(fields: [teamId], references: [id])
+  teamId   Int
   bankroll Int
 }
 
 model MatchDao {
-  matchId       String         @id @unique
-  timestamp     DateTime       @default(now())
-  teamMatchDaos TeamMatchDao[]
+  matchId         Int               @id @unique @default(autoincrement())
+  timestamp       DateTime          @default(now())
+  teamMatchDaos   TeamMatchDao[]
+  MatchRequestDao MatchRequestDao[]
+}
+
+model TeamInviteDao {
+  id     Int      @id @unique @default(autoincrement())
+  team   TeamDao  @relation(fields: [teamId], references: [id])
+  teamId Int
+  sendAt DateTime @default(now())
+  user   UserDao  @relation(fields: [userId], references: [id])
+  userId Int
+}
+
+model MatchRequestDao {
+  id              Int       @id @unique @default(autoincrement())
+  match           MatchDao? @relation(fields: [matchId], references: [matchId])
+  matchId         Int?
+  requestingTeam  TeamDao   @relation("RequestingTeam", fields: [requestingTeamId], references: [id])
+  requestingTeamId Int
+  requestedTeam   TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
+  requestedTeamId Int
+  accepted        Boolean
+}
+
+model Role {
+  id      Int       @id @default(autoincrement())
+  value   String    @unique
+  UserDao UserDao[]
 }
