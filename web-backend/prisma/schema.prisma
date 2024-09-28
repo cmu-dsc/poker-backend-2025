@@ -10,8 +10,7 @@ datasource db {
 model UserDao {
   id                Int             @id @unique @default(autoincrement())
   email             String          @unique
-  permissionLevel   Role            @relation(fields: [permissionLevelId], references: [id])
-  permissionLevelId Int             @default(1)
+  permissionLevel   String
   TeamDao           TeamDao?        @relation(fields: [teamId], references: [id])
   teamId            Int?
   invites           TeamInviteDao[]
@@ -26,6 +25,7 @@ model TeamDao {
   TeamMatchDao    TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
   requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
+  githubUsername String         @unique
 }
 
 model TeamMatchDao {
@@ -62,10 +62,4 @@ model MatchRequestDao {
   requestedTeam   TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
   requestedTeamId Int
   accepted        Boolean
-}
-
-model Role {
-  id      Int       @id @default(autoincrement())
-  value   String    @unique
-  UserDao UserDao[]
 }

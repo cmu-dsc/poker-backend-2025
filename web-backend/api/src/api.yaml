@@ -306,12 +306,15 @@ components:
     UserDto:
       type: object
       properties:
-        andrewId:
+        email:
           type: string
           example: "acarnegie"
         teamId:
+          type: number
+          example: 0
+        permissionLevel:
           type: string
-          example: "andrewc"
+          enum: ["Admin", "User"]
       required:
         - userId
     TeamDto:
