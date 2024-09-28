@@ -25,7 +25,6 @@ model TeamDao {
   TeamMatchDao    TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
   requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
-  githubUsername String         @unique
 }
 
 model TeamMatchDao {

@@ -3,40 +3,38 @@ import { dbClient } from 'src/server'
 import { UserDao } from '@prisma/client'
 
 /**
- * Get a user from the database by email; adds the user if it does not exist
- * @param {string} email the email of the user
+ * Get a user from the database by ID
+ * @param {number} id the ID of the user
  * @returns {UserDto} the corresponding user
  */
-export const getUserByEmail = async (email: string): Promise<UserDao> => {
+export const getUserById = async (id: number): Promise<UserDao> => {
   let retrievedUser: UserDao | null = (await dbClient.userDao.findUnique({
     where: {
-      email,
+      id,
     },
   })) as any as UserDao | null
 
   if (!retrievedUser) {
-    retrievedUser = (await dbClient.userDao.create({
-      data: {
-        email,
-      },
-    })) as any as UserDao
+    throw new ApiError(
+      ApiErrorCodes.NOT_FOUND,
+      `User with ID ${id} not found`,
+    )
   }
-
   return retrievedUser
 }
 
 /**
- * Get users from the database by emails
- * @param emails the emails of the users
+ * Get users from the database by IDs
+ * @param ids the IDs of the users
  * @returns the corresponding users
  */
-export const getUsersByEmails = async (
-  emails: string[],
+export const getUsersByIds = async (
+  ids: number[],
 ): Promise<UserDao[]> => {
   return dbClient.userDao.findMany({
     where: {
-      email: {
-        in: emails,
+      id: {
+        in: ids,
       },
     },
   })
@@ -44,15 +42,15 @@ export const getUsersByEmails = async (
 
 /**
  * Remove a user from a team
- * @param {string} email the email of the user
+ * @param {number} id the ID of the user
  * @returns {Promise<boolean>}
  */
-export const leaveTeam = async (email: string): Promise<boolean> => {
-  const teamId = (await getUserByEmail(email)).teamId
+export const leaveTeam = async (id: number): Promise<boolean> => {
+  const teamId = (await getUserById(id)).teamId
   try {
     await dbClient.userDao.update({
       where: {
-        email,
+        id,
       },
       data: {
         teamId: null,
