@@ -31,15 +31,15 @@ export const postTeam = async (
   res: Response<TeamDto>,
 ) => {
   const team: TeamDto = validateTeam(req.body)
-  const githubUsername: string = team.githubUsername
-  team.githubUsername = team.githubUsername.toLowerCase()
+  const teamName: string = team.name
+  team.name = team.name.toLowerCase()
 
   await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
   const createdTeam: TeamDao = await createTeam(team)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
   try {
-    await createServiceAccountAndResources(githubUsername)
+    await createServiceAccountAndResources(teamName)
   } catch (error) {
     console.error(
       'An error occurred while creating service account and resources:',
@@ -59,9 +59,9 @@ export const getTeamByGithubUsername = async (
   req: Request<any, any, any, any>,
   res: Response<TeamDto>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubUsername)
+  const teamName: string = validateTeamName(req.params.teamName)
 
-  const team: TeamDao = await getTeamById(githubName)
+  const team: TeamDao = await getTeamById(teamName)
 
   const teamDto = await convertTeamDaoWithStatsToDto(team)
 
@@ -74,17 +74,17 @@ export const getTeamByGithubUsername = async (
  * @param {Response<TeamDto>} res the response containing the updated team
  */
 export const putTeamByGithubUsername = async (
-  req: Request<any, any, TeamDto> & { andrewId?: string },
+  req: Request<any, any, TeamDto> & { andrewid?: string },
   res: Response<TeamDto>,
 ) => {
   const githubName: string = validateTeamName(req.params.githubUsername)
   const team: TeamDto = validateTeam(req.body)
 
-  team.githubUsername = githubName
-  await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
+  team.githubUsername = teamId
+  await checkAndrewIdPartOfTeamDto(req.teamId!, team)
 
   const updatedTeamDao: TeamDao = await updateTeamByGithubUsername(
-    githubName,
+    githubName, 
     team,
   )
   const updatedTeam = convertTeamDaoToDto(updatedTeamDao)

@@ -15,10 +15,12 @@ const teamNameValidator = z
  * A validator for the team dto
  */
 const teamValidator = z.object({
-  githubUsername: teamNameValidator,
+  id: z.number().int().min(0).optional(),
+  name: teamNameValidator,
   members: z.array(z.string()).max(4).min(1),
   wins: z.number().int().min(0).optional(),
   losses: z.number().int().min(0).optional(),
+  deleted: z.boolean()
 })
 
 /**

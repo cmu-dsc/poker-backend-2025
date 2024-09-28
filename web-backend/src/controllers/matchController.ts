@@ -81,21 +81,21 @@ export const getMatchByMatchIdLogsBot = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<DownloadLinkDto>,
 ) => {
-  const matchId: string = validateMatchId(req.params.matchId)
+  // const matchId: string = validateMatchId(req.params.matchId)
 
-  await checkAndrewIdPermissionsForMatch(req.andrewId!, req.params.matchId)
+  // await checkAndrewIdPermissionsForMatch(req.andrewId!, req.params.matchId)
 
-  const user: UserDao = await getUserByAndrewId(req.andrewId!)
-  if (!user.teamDaoGithubUsername) {
-    throw new ApiError(
-      ApiErrorCodes.FORBIDDEN,
-      'User does not have permission to access this match',
-    )
-  }
-  const downloadUrl: string = await getBotLogDownloadLink(
-    matchId,
-    user.teamDaoGithubUsername,
-  )
+  // const user: UserDao = await getUserByAndrewId(req.andrewId!)
+  // if (!user.teamDaoGithubUsername) {
+  //   throw new ApiError(
+  //     ApiErrorCodes.FORBIDDEN,
+  //     'User does not have permission to access this match',
+  //   )
+  // }
+  // const downloadUrl: string = await getBotLogDownloadLink(
+  //   matchId,
+  //   user.teamDaoGithubUsername,
+  // )
 
-  res.status(200).json({ downloadUrl, filetype: 'txt' } as DownloadLinkDto)
+  // res.status(200).json({ downloadUrl, filetype: 'txt' } as DownloadLinkDto)
 }

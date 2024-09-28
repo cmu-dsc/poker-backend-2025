@@ -11,10 +11,12 @@ export const convertTeamDaoToDto = (
   teamDao: TeamDao & { members?: { andrewId: string }[] },
 ): TeamDto => {
   return {
-    githubUsername: teamDao.githubUsername,
+    id: teamDao.id,
+    teamName: teamDao.teamName,
     members: teamDao.members
       ? teamDao.members.map((member: any) => member.andrewId)
       : [],
+    deleted: teamDao.deleted
   }
 }
 
@@ -29,7 +31,7 @@ export const convertTeamDaoWithStatsToDto = async (
 ): Promise<TeamDto> => {
   let teamMatches = await dbClient.teamMatchDao.findMany({
     where: {
-      teamId: teamDao.githubUsername,
+      teamId: teamDao.id,
     },
     include: {
       match: {
@@ -49,11 +51,11 @@ export const convertTeamDaoWithStatsToDto = async (
     const { teamMatchDaos } = teamMatch.match
     if (
       teamMatchDaos.length !== 2 &&
-      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatchDaos[0].teamId === teamDao.githubUsername
+    return teamMatchDaos[0].teamId === teamDao.id
       ? teamMatchDaos[0].bankroll > teamMatchDaos[1].bankroll
       : teamMatchDaos[1].bankroll > teamMatchDaos[0].bankroll
   }).length
@@ -62,21 +64,23 @@ export const convertTeamDaoWithStatsToDto = async (
     const { teamMatchDaos } = teamMatch.match
     if (
       teamMatchDaos.length !== 2 &&
-      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatchDaos[0].teamId === teamDao.githubUsername
+    return teamMatchDaos[0].teamId === teamDao.id
       ? teamMatchDaos[0].bankroll < teamMatchDaos[1].bankroll
       : teamMatchDaos[1].bankroll < teamMatchDaos[0].bankroll
   }).length
 
   return {
-    githubUsername: teamDao.githubUsername,
+    id: teamDao.id,
+    teamName: teamDao.teamName,
     members: teamDao.members
       ? teamDao.members.map((member: any) => member.andrewId)
       : [],
     wins: wonMatches,
     losses: lostMatches,
+    deleted: teamDao.deleted
   }
 }

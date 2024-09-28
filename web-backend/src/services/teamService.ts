@@ -10,10 +10,10 @@ import { getUsersByAndrewIds } from './userService'
  * @returns {TeamDao} the corresponding team
  * @throws {ApiError} if the team is not found
  */
-export const getTeamById = async (teamId: string): Promise<TeamDao> => {
+export const getTeamById = async (teamId: number): Promise<TeamDao> => {
   const retrievedTeam: TeamDao | null = (await dbClient.teamDao.findUnique({
     where: {
-      githubUsername: teamId,
+      id: teamId,
     },
     include: {
       members: true,
@@ -41,16 +41,16 @@ export const getAllTeams = async (): Promise<TeamDao[]> => {
 
 /**
  * Update a team in the database by teamId
- * @param {string} githubUsername the id of the team
+ * @param {number} teamId the id of the team
  * @param {TeamDto} team the updated team
  * @returns {TeamDao} the updated team
  * @throws {ApiError} if the team is not found
  */
 export const updateTeamByGithubUsername = async (
-  githubUsername: string,
+  teamName: string,
   team: TeamDto,
 ): Promise<TeamDao> => {
-  if (team.githubUsername !== githubUsername) {
+  if (team.teamName !== teamName) {
     throw new ApiError(
       ApiErrorCodes.BAD_REQUEST,
       'Cannot change the github username of a team',
@@ -59,7 +59,7 @@ export const updateTeamByGithubUsername = async (
 
   // First, get the current team members
   const currentTeam = await dbClient.teamDao.findUnique({
-    where: { githubUsername },
+    where: { teamName },
     include: { members: true },
   })
 
@@ -74,7 +74,7 @@ export const updateTeamByGithubUsername = async (
 
   if (disconnectMembers.length > 0) {
     await dbClient.teamDao.update({
-      where: { githubUsername },
+      where: { teamName },
       data: { members: { disconnect: disconnectMembers } },
     })
   }
@@ -82,7 +82,7 @@ export const updateTeamByGithubUsername = async (
   const users = await getUsersByAndrewIds(team.members)
 
   const membersToAddWithinSystem = users
-    .filter(user => !user.teamDaoGithubUsername)
+    .filter(user => !user.teamName)
     .map(user => user.andrewId)
   const membersToAddToTheSystem = team.members.filter(
     member => !users.map(u => u.andrewId).includes(member),
@@ -92,7 +92,7 @@ export const updateTeamByGithubUsername = async (
 
   // Then, connect or create the users in the new list
   const updatedTeam = await dbClient.teamDao.update({
-    where: { githubUsername },
+    where: { teamName },
     data: {
       members: {
         connectOrCreate: membersToAdd.map(member => ({
@@ -106,7 +106,7 @@ export const updateTeamByGithubUsername = async (
 
   await dbClient.teamDao.deleteMany({
     where: {
-      githubUsername: updatedTeam.githubUsername,
+      teamName: updatedTeam.teamName,
       members: {
         none: {},
       },
@@ -125,7 +125,8 @@ export const updateTeamByGithubUsername = async (
 export const createTeam = async (team: TeamDto): Promise<TeamDao> => {
   const retrievedTeam: TeamDao | null = (await dbClient.teamDao.findUnique({
     where: {
-      githubUsername: team.githubUsername,
+      id: team.id,
+      teamName: team.teamName
     },
   })) as any as TeamDao | null
 
@@ -149,7 +150,7 @@ export const createTeam = async (team: TeamDto): Promise<TeamDao> => {
 
   const createdTeam: TeamDao = (await dbClient.teamDao.create({
     data: {
-      githubUsername: team.githubUsername,
+      teamName: team.teamName,
       members: {
         connectOrCreate: membersToAdd.map(member => ({
           where: { andrewId: member },
@@ -167,12 +168,14 @@ export const createTeam = async (team: TeamDto): Promise<TeamDao> => {
 
 /**
  * Delete a team from the database by teamId
- * @param {string} githubUsername the id of the team
+ * @param {string} teamName the id of the team
  */
-export const deleteTeam = async (githubUsername: string): Promise<void> => {
+export const deleteTeam = async (teamName: string): Promise<void> => {
   await dbClient.teamDao.delete({
     where: {
-      githubUsername,
+      teamName,
+      members : [], // check Types
+      deleted : true,
     },
   })
 }

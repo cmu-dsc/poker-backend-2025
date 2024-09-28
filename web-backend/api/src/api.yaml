@@ -317,9 +317,12 @@ components:
     TeamDto:
       type: object
       properties:
-        githubUsername:
+        id:
+          type: number
+          example: 30192783
+        teamName:
           type: string
-          example: "andrewc"
+          example: "andrewteam"
         members:
           type: array
           items:
@@ -331,9 +334,15 @@ components:
         losses:
           type: number
           example: 2
+        deleted:
+          type: boolean
+          default: false
+          example: true
       required:
-        - githubUsername
+        - id
+        - teamName
         - members
+        - deleted
     MatchDto:
       type: object
       properties:
