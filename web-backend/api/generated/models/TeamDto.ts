@@ -3,9 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export type TeamDto = {
-    githubUsername: string;
+    id: number;
+    teamName: string;
     members: Array<string>;
     wins?: number;
     losses?: number;
+    deleted: boolean;
 };
 

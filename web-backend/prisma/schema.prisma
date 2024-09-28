@@ -21,7 +21,7 @@ model TeamDao {
   id              Int               @id @unique @default(autoincrement())
   members         UserDao[]
   TeamInviteDao   TeamInviteDao[]
-  name            String
+  teamName        String            @unique
   deleted         Boolean           @default(false)
   TeamMatchDao    TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
