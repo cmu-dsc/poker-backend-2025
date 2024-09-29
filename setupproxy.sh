@@ -1,1 +1,0 @@
-./cloud-sql-proxy --address 0.0.0.0 --port 3306 pokerai-417521:us-east4:pokerai-sql
