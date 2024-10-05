@@ -49,8 +49,8 @@ export class TeamService {
         });
     }
     /**
-     * Get a team by github username
-     * Get a team by github username
+     * Get a team by their team id
+     * Get a team by their team id
      * @param githubUsername The github username of the team
      * @returns TeamDto OK
      * @throws ApiError

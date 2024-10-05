@@ -119,8 +119,8 @@ paths:
     get:
       tags:
         - team
-      summary: Get a team by github username
-      description: Get a team by github username
+      summary: Get a team by their team id
+      description: Get a team by their team id
       parameters:
         - in: path
           name: githubUsername
@@ -192,7 +192,7 @@ paths:
         "403":
           description: Forbidden
 
-  /match/team/{githubUsername}:
+  /match/team/{teamId}:
     get:
       tags:
         - match
@@ -200,11 +200,11 @@ paths:
       description: Get all matches of my team
       parameters:
         - in: path
-          name: githubUsername
+          name: teamId
           required: true
           schema:
             type: string
-          description: The github username of the team
+          description: The id of the team
       responses:
         "200":
           description: OK
@@ -334,6 +334,20 @@ components:
       required:
         - githubUsername
         - members
+    
+    MatchRequestDto:
+      type: object
+      properties:
+        requestingTeamId:
+          type: number
+          example: 1
+        requestedTeamId:
+          type: number
+          example: 1
+      required:
+        - requestingTeamId
+        - requestedTeamId
+
     MatchDto:
       type: object
       properties:

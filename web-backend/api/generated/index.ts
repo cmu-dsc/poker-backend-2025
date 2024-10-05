@@ -10,6 +10,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export { DownloadLinkDto } from './models/DownloadLinkDto';
 export type { HelloWorldResponseDto } from './models/HelloWorldResponseDto';
 export type { MatchDto } from './models/MatchDto';
+export type { MatchRequestDto } from './models/MatchRequestDto';
 export type { TeamDto } from './models/TeamDto';
 export type { UserDto } from './models/UserDto';
 

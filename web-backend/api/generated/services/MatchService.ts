@@ -11,18 +11,18 @@ export class MatchService {
     /**
      * Get all matches
      * Get all matches of my team
-     * @param githubUsername The github username of the team
+     * @param teamId The id of the team
      * @returns MatchDto OK
      * @throws ApiError
      */
     public static getMatchTeam(
-        githubUsername: string,
+        teamId: string,
     ): CancelablePromise<Array<MatchDto>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/match/team/{githubUsername}',
+            url: '/match/team/{teamId}',
             path: {
-                'githubUsername': githubUsername,
+                'teamId': teamId,
             },
         });
     }

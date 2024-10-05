@@ -8,7 +8,7 @@ import { requestLogger } from './middleware/logger/httplogger'
 import matchRouter from './routes/matchRouter'
 import teamRouter from './routes/teamRouter'
 import userRouter from './routes/userRouter'
-import firebaseAuthMiddleware from './middleware/auth/firebaseAuth'
+// import firebaseAuthMiddleware from './middleware/auth/firebaseAuth'
 
 const app = express()
 
@@ -26,7 +26,7 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ msg: 'Hello World!' } as HelloWorldResponseDto)
 })
 
-app.use('/', firebaseAuthMiddleware)
+// app.use('/', firebaseAuthMiddleware)
 
 app.use('/user', [userRouter()])
 
