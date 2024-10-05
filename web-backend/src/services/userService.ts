@@ -3,40 +3,38 @@ import { dbClient } from 'src/server'
 import { UserDao } from '@prisma/client'
 
 /**
- * Get a user from the database by userId; adds the user if it does not exist
- * @param {string} userId the id of the user
+ * Get a user from the database by ID
+ * @param {number} id the ID of the user
  * @returns {UserDto} the corresponding user
  */
-export const getUserByAndrewId = async (andrewId: string): Promise<UserDao> => {
+export const getUserById = async (id: number): Promise<UserDao> => {
   let retrievedUser: UserDao | null = (await dbClient.userDao.findUnique({
     where: {
-      andrewId,
+      id,
     },
   })) as any as UserDao | null
 
   if (!retrievedUser) {
-    retrievedUser = (await dbClient.userDao.create({
-      data: {
-        andrewId,
-      },
-    })) as any as UserDao
+    throw new ApiError(
+      ApiErrorCodes.NOT_FOUND,
+      `User with ID ${id} not found`,
+    )
   }
-
   return retrievedUser
 }
 
 /**
- * Get users from the database by userIds
- * @param andrewIds the ids of the users
+ * Get users from the database by IDs
+ * @param ids the IDs of the users
  * @returns the corresponding users
  */
-export const getUsersByAndrewIds = async (
-  andrewIds: string[],
+export const getUsersByIds = async (
+  ids: number[],
 ): Promise<UserDao[]> => {
   return dbClient.userDao.findMany({
     where: {
-      andrewId: {
-        in: andrewIds,
+      id: {
+        in: ids,
       },
     },
   })
@@ -44,25 +42,25 @@ export const getUsersByAndrewIds = async (
 
 /**
  * Remove a user from a team
- * @param {string} andrewId the id of the user
+ * @param {number} id the ID of the user
  * @returns {Promise<boolean>}
  */
-export const leaveTeam = async (andrewId: string): Promise<boolean> => {
-  const teamId = (await getUserByAndrewId(andrewId)).teamDaoGithubUsername
+export const leaveTeam = async (id: number): Promise<boolean> => {
+  const teamId = (await getUserById(id)).teamId
   try {
     await dbClient.userDao.update({
       where: {
-        andrewId,
+        id,
       },
       data: {
-        teamDaoGithubUsername: null,
+        teamId: null,
       },
     })
 
     if (teamId) {
       await dbClient.teamDao.deleteMany({
         where: {
-          githubUsername: teamId,
+          id: teamId,
           members: {
             none: {},
           },

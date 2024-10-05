@@ -11,7 +11,7 @@ export { DownloadLinkDto } from './models/DownloadLinkDto';
 export type { HelloWorldResponseDto } from './models/HelloWorldResponseDto';
 export type { MatchDto } from './models/MatchDto';
 export type { TeamDto } from './models/TeamDto';
-export type { UserDto } from './models/UserDto';
+export { UserDto } from './models/UserDto';
 
 export { DefaultService } from './services/DefaultService';
 export { MatchService } from './services/MatchService';
