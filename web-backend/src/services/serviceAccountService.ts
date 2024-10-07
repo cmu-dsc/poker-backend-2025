@@ -19,7 +19,7 @@ async function logCurrentServiceAccount() {
 
 async function createServiceAccount(
   projectId: string,
-  serviceAccountId: string,
+  serviceAccountId: number,
   displayName: string,
 ) {
   const command = `gcloud iam service-accounts create ${serviceAccountId} --project=${projectId} --display-name="${displayName}"`
@@ -43,7 +43,7 @@ async function bindGitHubRepoToServiceAccount(
 async function createArtifactRegistryRepo(
   projectId: string,
   location: string,
-  repositoryId: string,
+  repositoryId: number,
 ) {
   const createCommand = `gcloud artifacts repositories create ${repositoryId} --project=${projectId} --location=${location} --repository-format=docker`
   await execAsync(createCommand)
@@ -74,7 +74,7 @@ async function createArtifactRegistryRepo(
 async function grantArtifactRegistryWriterRole(
   projectId: string,
   location: string,
-  repositoryId: string,
+  repositoryId: number,
   serviceAccountEmail: string,
 ) {
   const command = `gcloud artifacts repositories add-iam-policy-binding ${repositoryId} --project=${projectId} --location=${location} --member="serviceAccount:${serviceAccountEmail}" --role="roles/artifactregistry.writer"`
@@ -84,17 +84,17 @@ async function grantArtifactRegistryWriterRole(
   )
 }
 
-async function createServiceAccountAndResources(teamName: string) {
-  const username = teamName.toLowerCase().replace(/[^a-z0-9-]/g, '')
+async function createServiceAccountAndResources(teamId: number, teamName: string) {
+  const teamUniqueId = teamId
   const projectId = 'pokerai-417521'
-  const serviceAccountId = username
-  const displayName = username
-  const serviceAccountEmail = `${username}@${projectId}.iam.gserviceaccount.com`
-  const githubRepoRef = `${teamName}/poker-engine-2024`
+  const serviceAccountId = teamUniqueId
+  const displayName = teamName
+  const serviceAccountEmail = `${teamUniqueId}@${projectId}.iam.gserviceaccount.com`
+  const githubRepoRef = `${teamId}/poker-engine-2024`
   const workloadIdentityPoolId =
     'projects/979321260256/locations/global/workloadIdentityPools/github'
   const location = 'us-east4'
-  const repositoryId = username
+  const repositoryId = teamUniqueId
 
   try {
     await logCurrentServiceAccount()

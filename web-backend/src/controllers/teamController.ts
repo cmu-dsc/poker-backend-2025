@@ -1,10 +1,10 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
 import createServiceAccountAndResources from 'src/services/serviceAccountService'
-import { checkAndrewIdPartOfTeamDto } from 'src/services/permissions/teamPermissionService'
+import checkAndrewIdPartOfTeamDto from 'src/services/permissions/teamPermissionService'
 import {
   createTeam,
-  deleteTeam,
+  updateToDeletedTeam,
   getAllTeams,
   getTeamById,
   updateTeamByGithubUsername,
@@ -12,7 +12,7 @@ import {
 import {
   validateLastXGames,
   validateTeam,
-  validateTeamName,
+  validateTeamId,
 } from 'src/services/validators/teamValidatorService'
 import { TeamDao } from '@prisma/client'
 import {
@@ -31,15 +31,15 @@ export const postTeam = async (
   res: Response<TeamDto>,
 ) => {
   const team: TeamDto = validateTeam(req.body)
-  const teamName: string = team.name
-  team.name = team.name.toLowerCase()
-
-  await checkAndrewIdPartOfTeamDto(req.andrewId!, team)
+  const teamId: number = team.id
+  const teamName: string = team.teamName
+  //team.teamName = team.teamName.toLowerCase()
+  
   const createdTeam: TeamDao = await createTeam(team)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
   try {
-    await createServiceAccountAndResources(teamName)
+    await createServiceAccountAndResources(teamId, teamName)
   } catch (error) {
     console.error(
       'An error occurred while creating service account and resources:',
@@ -51,17 +51,15 @@ export const postTeam = async (
 }
 
 /**
- * Get a team by the team id (github username)
+ * Get a team by the team id
  * @param {Request<any, any, any, any>} req the request containing the team id
  * @param {Response<TeamDto>} res the response containing the team
  */
-export const getTeamByGithubUsername = async (
+export const getTeamByTeamId = async (
   req: Request<any, any, any, any>,
   res: Response<TeamDto>,
 ) => {
-  const teamName: string = validateTeamName(req.params.teamName)
-
-  const team: TeamDao = await getTeamById(teamName)
+  const team: TeamDao = await getTeamById(req.params.id)
 
   const teamDto = await convertTeamDaoWithStatsToDto(team)
 
@@ -69,22 +67,22 @@ export const getTeamByGithubUsername = async (
 }
 
 /**
- * Update a team by the team id (github username)
+ * Update a team by the team id
  * @param {Request<any, any, TeamDto>} req the request containing the team to update
  * @param {Response<TeamDto>} res the response containing the updated team
  */
-export const putTeamByGithubUsername = async (
-  req: Request<any, any, TeamDto> & { andrewid?: string },
+export const putTeamByTeamId = async (
+  req: Request<any, any, TeamDto> & { teamId?: number },
   res: Response<TeamDto>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubUsername)
+  const teamId: number = validateTeamId(req.params.team.teamId)
   const team: TeamDto = validateTeam(req.body)
 
-  team.githubUsername = teamId
-  await checkAndrewIdPartOfTeamDto(req.teamId!, team)
+  req.params.id = team.id
+  await checkAndrewIdPartOfTeamDto(req.params.andrewId!, team)
 
   const updatedTeamDao: TeamDao = await updateTeamByGithubUsername(
-    githubName, 
+    teamId, 
     team,
   )
   const updatedTeam = convertTeamDaoToDto(updatedTeamDao)
@@ -101,9 +99,10 @@ export const deleteTeamByGithubUsername = async (
   req: Request<any, any, any, any> & { andrewId?: string },
   res: Response<any>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubUsername)
+  const teamToDelete: TeamDto = validateTeam(req.params.id)
+  const githubid: number = teamToDelete.id
 
-  const team = await getTeamById(githubName)
+  const team = await getTeamById(githubid)
   // @ts-ignore
   if (!team.members.map(member => member.andrewId).includes(req.andrewId!)) {
     throw new ApiError(
@@ -112,7 +111,7 @@ export const deleteTeamByGithubUsername = async (
     )
   }
 
-  await deleteTeam(githubName)
+  await updateToDeletedTeam(teamToDelete.id)
 
   res.status(204).send()
 }

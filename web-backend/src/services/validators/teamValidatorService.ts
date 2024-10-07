@@ -15,8 +15,8 @@ const teamNameValidator = z
  * A validator for the team dto
  */
 const teamValidator = z.object({
-  id: z.number().int().min(0).optional(),
-  name: teamNameValidator,
+  id: z.number().int().min(0),
+  teamName: teamNameValidator,
   members: z.array(z.string()).max(4).min(1),
   wins: z.number().int().min(0).optional(),
   losses: z.number().int().min(0).optional(),
@@ -59,12 +59,12 @@ export const validateTeam = (team: TeamDto): TeamDto => {
 
 /**
  * Validate a team name
- * @param {string} teamName the team name to validate
- * @returns {string} the validated team name
+ * @param {number} teamId the teamName name to validate
+ * @returns {number} the validated team name
  */
-export const validateTeamName = (teamName: string): string => {
+export const validateTeamId = (teamId: number): number => {
   try {
-    return teamNameValidator.parse(teamName)
+    return teamId
   } catch (error) {
     throw new ApiError(ApiErrorCodes.BAD_REQUEST, String(error))
   }
