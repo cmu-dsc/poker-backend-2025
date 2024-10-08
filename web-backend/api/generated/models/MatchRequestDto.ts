@@ -6,7 +6,7 @@ export type MatchRequestDto = {
     matchRequestId: number;
     requestingTeamId: number;
     requestedTeamId: number;
-    requestedAt?: string;
+    requestedAt: string;
     accepted?: boolean;
 };
 

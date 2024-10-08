@@ -473,9 +473,9 @@ components:
         inviteeId:
           type: number
           example: 0
-        inviteeName:
+        inviteeEmail:
           type: string
-          example: "acarnegie"
+          example: "acarnegie@cmu.edu"
         sendAt:
           type: string
           format: date-time
@@ -483,10 +483,7 @@ components:
       required:
         - teamInviteId
         - teamId
-        - teamName
         - inviteeId
-        - inviteeName
-        - sendAt
     TeamDto:
       type: object
       properties:
@@ -510,6 +507,9 @@ components:
         losses:
           type: number
           example: 2
+        isDeleted:
+          type: boolean
+          example: false
       required:
         - teamName
         - teamId
@@ -523,7 +523,7 @@ components:
         botVersion:
           type: number
           example: 10
-        created:
+        createdAt:
           type: string
           format: date-time
           example: "2021-04-01T12:00:00Z"
@@ -595,6 +595,7 @@ components:
         - matchRequestId
         - requestingTeamId
         - requestedTeamId
+        - requestedAt
     DownloadLinkDto:
       type: object
       properties:

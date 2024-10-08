@@ -5,9 +5,9 @@
 export type TeamInviteDto = {
     teamInviteId: number;
     teamId: number;
-    teamName: string;
+    teamName?: string;
     inviteeId: number;
-    inviteeName: string;
-    sendAt: string;
+    inviteeEmail?: string;
+    sendAt?: string;
 };
 

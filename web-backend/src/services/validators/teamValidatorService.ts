@@ -1,30 +1,33 @@
 import { TeamDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { z } from 'zod'
+import { botValidator } from './botValidatorService'
 
 /**
  * A validator for team names
  */
-const teamNameValidator = z
-  .string()
-  .min(1)
-  .max(39)
-  .regex(/^[a-zA-Z0-9-]+$/)
+export const teamNameValidator = z.string().min(3).max(255)
 
 /**
  * A validator for the team dto
  */
 const teamValidator = z.object({
-  githubUsername: teamNameValidator,
+  teamId: z.number().int().min(0),
+  teamName: teamNameValidator,
   members: z.array(z.string()).max(4).min(1),
+  activeBot: botValidator.optional(),
   wins: z.number().int().min(0).optional(),
   losses: z.number().int().min(0).optional(),
+  isDeleted: z.boolean().optional(),
 })
 
 /**
  * A validator for last x games number
  */
-const lastXGamesValidator = z.coerce.number().nullish().transform( x => x ? x : undefined )
+const lastXGamesValidator = z.coerce
+  .number()
+  .nullish()
+  .transform(x => (x ? x : undefined))
 
 /**
  * Validate the last x games number
