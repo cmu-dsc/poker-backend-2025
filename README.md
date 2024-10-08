@@ -68,54 +68,92 @@ To test locally, run cloud-sql-proxy using the [script](/setupproxy.sh).
 The data is stored in MySQL, the schema is as follows:
 
 ```mermaid
-classDiagram
-    class UserDao {
-        +Int id
-        +String email
-        +Int permissionLevelId
-        +Int? teamId
-    }
-    class TeamDao {
-        +Int id
-        +String name
-        +Boolean deleted
-    }
-    class TeamMatchDao {
-        +Int id
-        +Int matchId
-        +Int teamId
-        +Int bankroll
-    }
-    class MatchDao {
-        +Int matchId
-        +DateTime timestamp
-    }
-    class TeamInviteDao {
-        +Int id
-        +Int teamId
-        +DateTime sendAt
-        +Int userId
-    }
-    class MatchRequestDao {
-        +Int id
-        +Int? matchId
-        +Int requestingTeamId
-        +Int requestedTeamId
-        +Boolean accepted
-    }
-    class Role {
-        +Int id
-        +String value
-    }
+erDiagram
 
-    UserDao "1" -- "0..1" TeamDao
-    UserDao "1" -- "0..*" TeamInviteDao
-    UserDao "1" -- "1" Role
-    TeamDao "1" -- "0..*" TeamMatchDao
-    TeamDao "1" -- "0..*" TeamInviteDao
-    TeamDao "1" -- "0..*" MatchRequestDao : requesting
-    TeamDao "1" -- "0..*" MatchRequestDao : requested
-    MatchDao "1" -- "0..*" TeamMatchDao
-    MatchDao "1" -- "0..*" MatchRequestDao
+%% Enums
+PermissionLevel {
+  ADMIN
+  USER
+}
+
+%% UserDao model
+UserDao {
+  Int id PK
+  String email
+  PermissionLevel permissionLevel
+  Int teamId FK
+  Boolean blocked
+}
+UserDao ||--o{ TeamInviteDao : "invites"
+UserDao }o--|| TeamDao : "TeamDao"
+
+%% TeamDao model
+TeamDao {
+  Int id PK
+  String name
+  Boolean deleted
+  Int activeBotId FK
+}
+TeamDao ||--o{ UserDao : "members"
+TeamDao ||--o{ TeamInviteDao : "TeamInviteDaos"
+TeamDao ||--o{ TeamMatchDao : "TeamMatchDaos"
+TeamDao ||--o{ MatchRequestDao : "requestingMatches"
+TeamDao ||--o{ MatchRequestDao : "requestedMatches"
+TeamDao ||--o{ BotDao : "bots"
+
+%% TeamMatchDao model
+TeamMatchDao {
+  Int id PK
+  Int teamId FK
+  Int matchId FK
+  Int botId FK
+  Int bankroll
+}
+TeamMatchDao }o--|| TeamDao : "team"
+TeamMatchDao }o--|| MatchDao : "match"
+TeamMatchDao }o--|| BotDao : "bot"
+
+%% MatchDao model
+MatchDao {
+  Int matchId PK
+  DateTime timestamp
+  Int matchRequestId FK @unique
+}
+MatchDao ||--o{ TeamMatchDao : "teamMatch"
+MatchDao }o--|| MatchRequestDao : "matchRequest"
+
+%% TeamInviteDao model
+TeamInviteDao {
+  Int id PK
+  Int teamId FK
+  Int userId FK
+  DateTime sendAt
+}
+TeamInviteDao }o--|| TeamDao : "team"
+TeamInviteDao }o--|| UserDao : "user"
+
+%% MatchRequestDao model
+MatchRequestDao {
+  Int id PK
+  Int requestingTeamId FK
+  Int requestedTeamId FK
+  Int matchId FK
+  DateTime sendAt
+  Boolean accepted
+}
+MatchRequestDao }o--|| TeamDao : "requestingTeam"
+MatchRequestDao }o--|| TeamDao : "requestedTeam"
+MatchRequestDao }o--|| MatchDao : "match"
+
+%% BotDao model
+BotDao {
+  Int id PK
+  Int version
+  Int teamId FK
+  DateTime created
+  String storageLocation
+}
+BotDao }o--|| TeamDao : "team"
+BotDao ||--o{ TeamMatchDao : "TeamMatchDao"
 
 ```

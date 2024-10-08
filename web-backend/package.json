@@ -15,7 +15,9 @@
     "clean": "rimraf dist",
     "compile": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "api:gen": "rimraf ./api/generated && openapi --input ./api/src/api.yaml --output ./api/generated",
-    "prisma:gen": "prisma generate"
+    "prisma:gen": "prisma generate",
+    "start:db": "docker-compose up -d",
+    "stop:db": "docker-compose down"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.9.0",

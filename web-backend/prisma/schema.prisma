@@ -3,28 +3,37 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATEBASE_URL_LOCAL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PermissionLevel {
+  ADMIN
+  USER
 }
 
 model UserDao {
-  id                Int             @id @unique @default(autoincrement())
-  email             String          @unique
-  permissionLevel   String
-  TeamDao           TeamDao?        @relation(fields: [teamId], references: [id])
-  teamId            Int?
-  invites           TeamInviteDao[]
+  id              Int             @id @unique @default(autoincrement())
+  email           String          @unique
+  permissionLevel PermissionLevel @default(USER)
+  TeamDao         TeamDao?        @relation(fields: [teamId], references: [id])
+  teamId          Int?
+  invites         TeamInviteDao[]
+  blocked         Boolean         @default(false)
 }
 
 model TeamDao {
-  id              Int               @id @unique @default(autoincrement())
-  members         UserDao[]
-  TeamInviteDao   TeamInviteDao[]
-  name            String
-  deleted         Boolean           @default(false)
-  TeamMatchDao    TeamMatchDao[]
+  id                Int               @id @unique @default(autoincrement())
+  members           UserDao[]
+  TeamInviteDao     TeamInviteDao[]
+  name              String
+  deleted           Boolean           @default(false)
+  TeamMatchDao      TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
   requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
+  activeBot         BotDao            @relation(fields: [activeBotId], references: [id])
+  activeBotId       Int
+  bots              BotDao[]          @relation("bots")
 }
 
 model TeamMatchDao {
@@ -34,13 +43,16 @@ model TeamMatchDao {
   team     TeamDao  @relation(fields: [teamId], references: [id])
   teamId   Int
   bankroll Int
+  bot      BotDao   @relation(fields: [botId], references: [id])
+  botId    Int
 }
 
 model MatchDao {
   matchId         Int               @id @unique @default(autoincrement())
   timestamp       DateTime          @default(now())
-  teamMatchDaos   TeamMatchDao[]
-  MatchRequestDao MatchRequestDao[]
+  teamMatch   TeamMatchDao[]
+  matchRequest    MatchRequestDao?   @relation(fields: [matchRequestId], references: [id])
+  matchRequestId  Int?               @unique 
 }
 
 model TeamInviteDao {
@@ -53,12 +65,23 @@ model TeamInviteDao {
 }
 
 model MatchRequestDao {
-  id              Int       @id @unique @default(autoincrement())
-  match           MatchDao? @relation(fields: [matchId], references: [matchId])
-  matchId         Int?
-  requestingTeam  TeamDao   @relation("RequestingTeam", fields: [requestingTeamId], references: [id])
+  id               Int       @id @unique @default(autoincrement())
+  match            MatchDao? 
+  requestingTeam   TeamDao   @relation("RequestingTeam", fields: [requestingTeamId], references: [id])
   requestingTeamId Int
-  requestedTeam   TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
-  requestedTeamId Int
-  accepted        Boolean
+  requestedTeam    TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
+  requestedTeamId  Int
+  sendAt           DateTime  @default(now())
+  accepted         Boolean
+}
+
+model BotDao {
+  id              Int            @id @unique @default(autoincrement())
+  version         Int
+  team            TeamDao        @relation("bots", fields: [teamId], references: [id])
+  teamId          Int
+  created         DateTime       @default(now())
+  storageLocation String
+  TeamDao         TeamDao[]
+  TeamMatchDao    TeamMatchDao[]
 }
