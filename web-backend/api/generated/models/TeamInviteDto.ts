@@ -2,13 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BotDto } from './BotDto';
-export type TeamDto = {
+export type TeamInviteDto = {
+    teamInviteId: number;
     teamId: number;
     teamName: string;
-    activeBot?: BotDto;
-    members: Array<string>;
-    wins?: number;
-    losses?: number;
+    inviteeId: number;
+    inviteeName: string;
+    sendAt: string;
 };
 

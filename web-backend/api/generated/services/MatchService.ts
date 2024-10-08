@@ -20,7 +20,7 @@ export class MatchService {
     ): CancelablePromise<Array<MatchDto>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/match/team/{githubUsername}',
+            url: '/match/team/{teamId}',
             path: {
                 'githubUsername': githubUsername,
             },

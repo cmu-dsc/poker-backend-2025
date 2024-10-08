@@ -2,12 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { TeamMatchDto } from './TeamMatchDto';
 export type MatchDto = {
-    matchId: string;
-    team1Id: string;
-    team2Id: string;
+    matchId: number;
     timestamp: string;
-    team1Score: number;
-    team2Score: number;
+    isRequestedMatch?: boolean;
+    teamMatches: Array<TeamMatchDto>;
 };
 
