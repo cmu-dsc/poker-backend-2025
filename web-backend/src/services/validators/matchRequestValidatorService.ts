@@ -11,7 +11,7 @@ const matchRequestValidator = z.object({
   requestingTeamId: idValidator,
   requestedTeamId: idValidator,
   requestedAt: z.string().datetime(),
-  accepted: z.boolean(),
+  isAccepted: z.boolean(),
 })
 
 /**

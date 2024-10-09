@@ -13,7 +13,6 @@ const teamInviteValidator = z.object({
   teamName: teamNameValidator.optional(),
   inviteeId: idValidator,
   inviteeEmail: z.string().optional(),
-  accepted: z.boolean(),
   sendAt: z.string().datetime(),
 })
 

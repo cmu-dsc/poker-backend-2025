@@ -10,6 +10,7 @@ export type TeamDto = {
     members: Array<string>;
     wins?: number;
     losses?: number;
+    elo?: number;
     isDeleted?: boolean;
 };
 

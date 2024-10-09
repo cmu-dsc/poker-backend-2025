@@ -82,7 +82,7 @@ UserDao {
   String email
   PermissionLevel permissionLevel
   Int teamId FK
-  Boolean blocked
+  Boolean isBlocked
 }
 UserDao ||--o{ TeamInviteDao : "invites"
 UserDao }o--|| TeamDao : "TeamDao"
@@ -91,8 +91,9 @@ UserDao }o--|| TeamDao : "TeamDao"
 TeamDao {
   Int id PK
   String name
-  Boolean deleted
+  Boolean isDeleted
   Int activeBotId FK
+  Int elo
 }
 TeamDao ||--o{ UserDao : "members"
 TeamDao ||--o{ TeamInviteDao : "TeamInviteDaos"
@@ -117,6 +118,7 @@ TeamMatchDao }o--|| BotDao : "bot"
 MatchDao {
   Int matchId PK
   DateTime timestamp
+  Boolean isCompleted
   Int matchRequestId FK @unique
 }
 MatchDao ||--o{ TeamMatchDao : "teamMatch"
@@ -139,7 +141,7 @@ MatchRequestDao {
   Int requestedTeamId FK
   Int matchId FK
   DateTime sendAt
-  Boolean accepted
+  Boolean isAccepted
 }
 MatchRequestDao }o--|| TeamDao : "requestingTeam"
 MatchRequestDao }o--|| TeamDao : "requestedTeam"

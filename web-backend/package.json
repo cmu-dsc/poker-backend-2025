@@ -8,6 +8,7 @@
   "scripts": {
     "prepare": "cd .. && husky install",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "dev": "pnpm api:gen && nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
     "build": "pnpm api:gen && pnpm prisma:gen && run-s clean compile postBuild",
     "postBuild": "ncp node_modules dist/node_modules",
@@ -16,8 +17,8 @@
     "compile": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "api:gen": "rimraf ./api/generated && openapi --input ./api/src/api.yaml --output ./api/generated",
     "prisma:gen": "prisma generate",
-    "start:db": "docker-compose up -d",
-    "stop:db": "docker-compose down"
+    "db:start": "docker-compose up -d",
+    "db:stop": "docker-compose down"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.9.0",

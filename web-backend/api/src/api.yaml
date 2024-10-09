@@ -507,6 +507,9 @@ components:
         losses:
           type: number
           example: 2
+        elo:
+          type: number
+          example: 1000
         isDeleted:
           type: boolean
           example: false
@@ -548,11 +551,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamMatchDto"
+        isCompleted:
+          type: boolean
+          example: true
       required:
         - matchId
         - isRequestedMatchjust 
         - timestamp
         - teamMatches
+        - isCompleted
     TeamMatchDto:
       type: object
       properties:

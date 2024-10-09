@@ -19,6 +19,7 @@ const teamValidator = z.object({
   wins: z.number().int().min(0).optional(),
   losses: z.number().int().min(0).optional(),
   isDeleted: z.boolean().optional(),
+  elo: z.number().int().min(0).optional(),
 })
 
 /**

@@ -8,5 +8,6 @@ export type MatchDto = {
     timestamp: string;
     isRequestedMatch?: boolean;
     teamMatches: Array<TeamMatchDto>;
+    isCompleted: boolean;
 };
 

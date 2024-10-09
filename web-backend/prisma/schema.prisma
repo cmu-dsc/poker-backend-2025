@@ -19,7 +19,7 @@ model UserDao {
   TeamDao         TeamDao?        @relation(fields: [teamId], references: [id])
   teamId          Int?
   invites         TeamInviteDao[]
-  blocked         Boolean         @default(false)
+  isBlocked       Boolean         @default(false)
 }
 
 model TeamDao {
@@ -27,13 +27,14 @@ model TeamDao {
   members           UserDao[]
   TeamInviteDao     TeamInviteDao[]
   name              String
-  deleted           Boolean           @default(false)
+  isDeleted         Boolean           @default(false)
   TeamMatchDao      TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
   requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
   activeBot         BotDao            @relation(fields: [activeBotId], references: [id])
   activeBotId       Int
   bots              BotDao[]          @relation("bots")
+  elo               Int               @default(1000)
 }
 
 model TeamMatchDao {
@@ -48,11 +49,12 @@ model TeamMatchDao {
 }
 
 model MatchDao {
-  matchId         Int               @id @unique @default(autoincrement())
-  timestamp       DateTime          @default(now())
-  teamMatch   TeamMatchDao[]
-  matchRequest    MatchRequestDao?   @relation(fields: [matchRequestId], references: [id])
-  matchRequestId  Int?               @unique 
+  matchId        Int              @id @unique @default(autoincrement())
+  timestamp      DateTime         @default(now())
+  teamMatch      TeamMatchDao[]
+  isCompleted    Boolean          @default(false)
+  matchRequest   MatchRequestDao? @relation(fields: [matchRequestId], references: [id])
+  matchRequestId Int?             @unique
 }
 
 model TeamInviteDao {
@@ -66,13 +68,13 @@ model TeamInviteDao {
 
 model MatchRequestDao {
   id               Int       @id @unique @default(autoincrement())
-  match            MatchDao? 
+  match            MatchDao?
   requestingTeam   TeamDao   @relation("RequestingTeam", fields: [requestingTeamId], references: [id])
   requestingTeamId Int
   requestedTeam    TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
   requestedTeamId  Int
   sendAt           DateTime  @default(now())
-  accepted         Boolean
+  isAccepted       Boolean
 }
 
 model BotDao {

@@ -7,7 +7,7 @@ CREATE TABLE "UserDao" (
     "email" TEXT NOT NULL,
     "permissionLevel" "PermissionLevel" NOT NULL DEFAULT 'USER',
     "teamId" INTEGER,
-    "blocked" BOOLEAN NOT NULL DEFAULT false,
+    "isBlocked" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "UserDao_pkey" PRIMARY KEY ("id")
 );
@@ -16,8 +16,9 @@ CREATE TABLE "UserDao" (
 CREATE TABLE "TeamDao" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "deleted" BOOLEAN NOT NULL DEFAULT false,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "activeBotId" INTEGER NOT NULL,
+    "elo" INTEGER NOT NULL DEFAULT 1000,
 
     CONSTRAINT "TeamDao_pkey" PRIMARY KEY ("id")
 );
@@ -37,6 +38,7 @@ CREATE TABLE "TeamMatchDao" (
 CREATE TABLE "MatchDao" (
     "matchId" SERIAL NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
     "matchRequestId" INTEGER,
 
     CONSTRAINT "MatchDao_pkey" PRIMARY KEY ("matchId")
@@ -58,7 +60,7 @@ CREATE TABLE "MatchRequestDao" (
     "requestingTeamId" INTEGER NOT NULL,
     "requestedTeamId" INTEGER NOT NULL,
     "sendAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "accepted" BOOLEAN NOT NULL,
+    "isAccepted" BOOLEAN NOT NULL,
 
     CONSTRAINT "MatchRequestDao_pkey" PRIMARY KEY ("id")
 );
