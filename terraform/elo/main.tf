@@ -7,7 +7,7 @@ data "archive_file" "elo_function_zip" {
 
 # SQS Queue
 resource "aws_sqs_queue" "match_results_queue" {
-  name                        = "match-results-queue"
+  name = "match-results-queue"
   tags = var.tags
 }
 

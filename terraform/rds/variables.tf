@@ -3,12 +3,6 @@ variable "tags" {
   type        = map(string)
 }
 
-variable "availability_zones" {
-  description = "A list of availability zones in the region"
-  type        = list(string)
-  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
-}
-
 variable "db_username" {
   description = "Username for the master DB user"
   type        = string
@@ -21,6 +15,22 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "db_subnet_group_name" {
+  description = "Name of DB subnet group"
+  type        = string
+}
+
+variable "vpc_security_group_ids" {
+  description = "List of VPC security groups to associate"
+  type        = list(string)
+}
+
+variable "availability_zones" {
+  description = "A list of availability zones in the region"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+}
+
 variable "backup_retention_period" {
   description = "The days to retain backups for"
   type        = number
@@ -31,16 +41,6 @@ variable "preferred_backup_window" {
   description = "The daily time range during which automated backups are created"
   type        = string
   default     = "03:00-05:00"
-}
-
-variable "db_subnet_group_name" {
-  description = "Name of DB subnet group"
-  type        = string
-}
-
-variable "vpc_security_group_ids" {
-  description = "List of VPC security groups to associate"
-  type        = list(string)
 }
 
 variable "db_max_capacity" {
