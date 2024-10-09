@@ -1,16 +1,20 @@
 import { UserDto } from '@api/generated'
-import { UserDao } from '@prisma/client'
+import { TeamDao, UserDao } from '@prisma/client'
 
-export const convertUserDaoToDto = async (userDao: UserDao): Promise<UserDto> => {
+const convertPermissionLevelDaoToDto = (permissionLevel: string): UserDto.permissionLevel => {
+  if (permissionLevel.toUpperCase() === "ADMIN") {
+    return UserDto.permissionLevel.ADMIN
+  } else {
+    return UserDto.permissionLevel.USER
+  }
+}
+
+export const convertUserDaoToDto = (userDao: UserDao & {teamDao: TeamDao}): UserDto => {
   return {
-    teamId:
-      userDao.teamId == null
-        ? undefined
-        : userDao.teamId,
+    userId: userDao.id,
     email: userDao.email,
-    permissionLevel:
-      userDao.permissionLevel == "Admin"
-      ? UserDto.permissionLevel.ADMIN
-      : UserDto.permissionLevel.USER,
+    permissionLevel: convertPermissionLevelDaoToDto(userDao.permissionLevel),
+    teamId: userDao.teamDao.id,
+    teamName: userDao.teamDao.name,
   }
 }

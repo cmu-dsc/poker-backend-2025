@@ -533,7 +533,7 @@ components:
       required:
         - botId
         - botVersion
-        - created
+        - createdAt
     MatchDto:
       type: object
       properties:
@@ -564,10 +564,11 @@ components:
       type: object
       properties:
         teamId:
-          type: string
-          example: "andrewc"
+          type: number
+          example: 0
         teamName:
           type: string
+          example: "andrewc"
         botVersion:
           type: number
           example: 10

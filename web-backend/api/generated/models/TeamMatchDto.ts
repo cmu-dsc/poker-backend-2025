@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type TeamMatchDto = {
-    teamId: string;
+    teamId: number;
     teamName: string;
     botVersion: number;
     bankroll: number;

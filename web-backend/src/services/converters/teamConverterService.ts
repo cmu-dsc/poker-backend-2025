@@ -1,6 +1,7 @@
-import { TeamDto } from '@api/generated'
-import { PrismaClient, TeamDao } from '@prisma/client'
+import { BotDto, TeamDto } from '@api/generated'
+import { BotDao, PrismaClient, TeamDao, UserDao } from '@prisma/client'
 import { dbClient } from 'src/server'
+import { convertBotDaoToDto } from './botConverterService'
 
 /**
  * Convert a team DAO to a team DTO
@@ -8,33 +9,39 @@ import { dbClient } from 'src/server'
  * @returns the team DTO
  */
 export const convertTeamDaoToDto = (
-  teamDao: TeamDao & { members?: { andrewId: string }[] },
+  teamDao: TeamDao & { members: UserDao[], activeBot: BotDao },
 ): TeamDto => {
+
   return {
-    githubUsername: teamDao.githubUsername,
+    teamId: teamDao.id,
+    teamName: teamDao.name,
+    // TODO add bot converter
+    activeBot: convertBotDaoToDto(teamDao.activeBot),
     members: teamDao.members
-      ? teamDao.members.map((member: any) => member.andrewId)
+      ? teamDao.members.map((member: UserDao) => member.email)
       : [],
+    isDeleted: teamDao.isDeleted,
+    elo: teamDao.elo,
   }
 }
 
 /**
- * Return the team with the given github username including the number of wins and losses
- * @param teamDao the team Dao to convert
- * @returns the team DTO
+ * Return the team including the number of wins and losses
+ * @param {TeamDao & { members: UserDao[], activeBot: BotDao }} teamDao the team Dao to convert
+ * @returns {TeamDto} the team DTO
  */
 export const convertTeamDaoWithStatsToDto = async (
-  teamDao: TeamDao & { members?: { andrewId: string }[] },
+  teamDao: TeamDao & { members: UserDao[], activeBot: BotDao },
   lastXGames: undefined | number = undefined,
 ): Promise<TeamDto> => {
   let teamMatches = await dbClient.teamMatchDao.findMany({
     where: {
-      teamId: teamDao.githubUsername,
+      teamId: teamDao.id,
     },
     include: {
       match: {
         select: {
-          teamMatchDaos: true,
+          teamMatch: true,
           timestamp: true,
         },
       },
@@ -45,37 +52,34 @@ export const convertTeamDaoWithStatsToDto = async (
     teamMatches = teamMatches.slice(lastXGames * -1)
   }
 
-  const wonMatches = teamMatches.filter(teamMatch => {
-    const { teamMatchDaos } = teamMatch.match
+  const wonMatches = teamMatches.filter(teamMatchDao => {
+    const { teamMatch } = teamMatchDao.match
     if (
-      teamMatchDaos.length !== 2 &&
-      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+      teamMatch.length !== 2 &&
+      !teamMatch.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatchDaos[0].teamId === teamDao.githubUsername
-      ? teamMatchDaos[0].bankroll > teamMatchDaos[1].bankroll
-      : teamMatchDaos[1].bankroll > teamMatchDaos[0].bankroll
+    return teamMatch[0].teamId === teamDao.id
+      ? teamMatch[0].bankroll > teamMatch[1].bankroll
+      : teamMatch[1].bankroll > teamMatch[0].bankroll
   }).length
 
-  const lostMatches = teamMatches.filter(teamMatch => {
-    const { teamMatchDaos } = teamMatch.match
+  const lostMatches = teamMatches.filter(teamMatchDao => {
+    const { teamMatch } = teamMatchDao.match
     if (
-      teamMatchDaos.length !== 2 &&
-      !teamMatchDaos.map(tmd => tmd.teamId).includes(teamDao.githubUsername)
+      teamMatch.length !== 2 &&
+      !teamMatch.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatchDaos[0].teamId === teamDao.githubUsername
-      ? teamMatchDaos[0].bankroll < teamMatchDaos[1].bankroll
-      : teamMatchDaos[1].bankroll < teamMatchDaos[0].bankroll
+    return teamMatch[0].teamId === teamDao.id
+      ? teamMatch[0].bankroll < teamMatch[1].bankroll
+      : teamMatch[1].bankroll < teamMatch[0].bankroll
   }).length
 
   return {
-    githubUsername: teamDao.githubUsername,
-    members: teamDao.members
-      ? teamDao.members.map((member: any) => member.andrewId)
-      : [],
+    ...convertTeamDaoToDto(teamDao),
     wins: wonMatches,
     losses: lostMatches,
   }

@@ -5,6 +5,6 @@
 export type BotDto = {
     botId: number;
     botVersion: number;
-    createdAt?: string;
+    createdAt: string;
 };
 
