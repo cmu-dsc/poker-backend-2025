@@ -16,7 +16,10 @@ module "s3" {
   tags   = var.tags
 }
 
-module "sns" {
-  source = "./sns"
-  tags   = var.tags
+module "elo" {
+  source      = "./elo"
+  tags        = var.tags
+  db_host     = module.rds.cluster_endpoint
+  db_username = var.db_username
+  db_password = var.db_password
 }
