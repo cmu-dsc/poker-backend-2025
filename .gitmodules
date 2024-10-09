@@ -1,0 +1,3 @@
+[submodule "match-function/poker-engine-2025"]
+	path = match-function/poker-engine-2025
+	url = https://github.com/cmu-dsc/poker-engine-2025.git
