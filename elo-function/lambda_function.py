@@ -38,21 +38,6 @@ def calculate_new_elo(player_elo, opponent_elo, result):
     return round(new_elo)
 
 
-def update_elo_in_db(conn, player_id, new_elo):
-    """
-    Update the Elo rating for a player in the database.
-
-    Args:
-        conn (psycopg2.connection): Database connection
-        player_id (int): ID of the player
-        new_elo (int): New Elo rating to be set
-    """
-    with conn.cursor() as cur:
-        update_query = sql.SQL("UPDATE players SET elo_rating = %s WHERE player_id = %s")
-        cur.execute(update_query, (new_elo, player_id))
-    conn.commit()
-
-
 def lambda_handler(event, context):
     conn = connect_to_db()
 

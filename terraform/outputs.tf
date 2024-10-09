@@ -19,5 +19,3 @@ output "poker_logs_bucket_id" {
   description = "The ID of the poker-logs S3 bucket"
   value       = module.s3.poker_logs_bucket_id
 }
-
-# Lambda Outputs
