@@ -2,20 +2,25 @@ import { MatchDto } from '@api/generated'
 import { MatchDao, TeamDao, TeamMatchDao } from '@prisma/client'
 import { dbClient } from 'src/server'
 
+/**
+ * Convert a match DAO to a match DTO
+ * @param {MatchDao & { teamMatchDaos: TeamMatchDao[] }} matchDao the match DAO to convert
+ * @returns {MatchDto} the match DTO
+ */
 export const convertMatchDaoWithTeamMatchDaosToDto = async (
-  matchDao: MatchDao & { teamMatchDaos: TeamMatchDao[] },
+  matchDao: MatchDao & { teamMatch: TeamMatchDao[] },
 ): Promise<MatchDto> => {
   if (
-    matchDao.teamMatchDaos === undefined ||
-    matchDao.teamMatchDaos.length !== 2
+    matchDao.teamMatch === undefined ||
+    matchDao.teamMatch.length !== 2
   ) {
     throw new Error('Invalid TeamMatchDaos in MatchDao')
   }
-  const team1Id: number = matchDao.teamMatchDaos[0].id
-  const team2Id: number = matchDao.teamMatchDaos[1].id
+  const team1Id: number = matchDao.teamMatch[0].id
+  const team2Id: number = matchDao.teamMatch[1].id
 
-  const bot1Id: number = matchDao.teamMatchDaos[0].botId
-  const bot2Id: number = matchDao.teamMatchDaos[1].botId
+  const bot1Id: number = matchDao.teamMatch[0].botId
+  const bot2Id: number = matchDao.teamMatch[1].botId
 
   const team1Dao: TeamDao | null = await dbClient.teamDao.findUnique({
     where: { id: team1Id },
@@ -45,13 +50,13 @@ export const convertMatchDaoWithTeamMatchDaosToDto = async (
         teamId: team1Dao.id,
         teamName: team1Dao.name,
         botVersion: bot1Dao.version,
-        bankroll: matchDao.teamMatchDaos[0].bankroll,
+        bankroll: matchDao.teamMatch[0].bankroll,
       },
       {
         teamId: team2Dao.id,
         teamName: team2Dao.name,
         botVersion: bot2Dao.version,
-        bankroll: matchDao.teamMatchDaos[1].bankroll,
+        bankroll: matchDao.teamMatch[1].bankroll,
       },
     ]
   }

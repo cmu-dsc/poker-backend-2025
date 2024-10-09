@@ -5,7 +5,7 @@ import {
   getBotLogPathTeam,
   getEngineLogPath,
 } from 'src/config/bucket'
-import { MatchDao } from '@prisma/client'
+import { MatchDao, TeamMatchDao } from '@prisma/client'
 import { dbClient, storageClient } from 'src/server'
 import { GetSignedUrlConfig } from '@google-cloud/storage'
 import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
@@ -15,13 +15,13 @@ import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConvert
  * @param {string} matchId the id of the match
  * @returns {Promise<MatchDao>} the corresponding match
  */
-export const getMatchById = async (matchId: string): Promise<MatchDao> => {
-  const match: MatchDao | null = await dbClient.matchDao.findUnique({
+export const getMatchById = async (matchId: number): Promise<MatchDao & {teamMatch: TeamMatchDao[]}> => {
+  const match: MatchDao & {teamMatch: TeamMatchDao[]} | null = await dbClient.matchDao.findUnique({
     where: {
       matchId,
     },
     include: {
-      teamMatchDaos: true,
+      teamMatch: true,
     },
   })
 
