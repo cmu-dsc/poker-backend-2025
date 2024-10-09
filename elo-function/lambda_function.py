@@ -54,27 +54,24 @@ def update_elo_in_db(conn, player_id, new_elo):
 
 
 def lambda_handler(event, context):
-    """
-    AWS Lambda handler function to process match results and update Elo ratings.
-
-    Args:
-        event (dict): AWS Lambda event object
-        context (object): AWS Lambda context object
-
-    Returns:
-        dict: Response object with status code and message
-    """
     conn = connect_to_db()
 
     try:
         with conn.cursor() as cur:
             for record in event["Records"]:
-                message = record["body"]
-                match_result = json.loads(message)
+                message = json.loads(record["body"])
+                match_id = message["match_id"]
+                player1_id = message["player1_id"]
+                player2_id = message["player2_id"]
+                result = message["result"]
 
-                player1_id = match_result["player1_id"]
-                player2_id = match_result["player2_id"]
-                result = match_result["result"]
+                # Check if this match has already been processed
+                cur.execute("SELECT processed FROM matches WHERE match_id = %s", (match_id,))
+                match_processed = cur.fetchone()
+
+                if match_processed and match_processed[0]:
+                    print(f"Match {match_id} already processed, skipping.")
+                    continue
 
                 # Fetch Elo ratings for both players in a single query
                 cur.execute(
@@ -89,13 +86,19 @@ def lambda_handler(event, context):
                 player1_new_elo = calculate_new_elo(player1_elo, player2_elo, result)
                 player2_new_elo = calculate_new_elo(player2_elo, player1_elo, "loss" if result == "win" else "win")
 
-                # Update Elo ratings in a single transaction
+                # Update Elo ratings and mark match as processed in a single transaction
                 cur.execute(
-                    "UPDATE players SET elo_rating = CASE "
-                    "WHEN player_id = %s THEN %s "
-                    "WHEN player_id = %s THEN %s "
-                    "END WHERE player_id IN (%s, %s)",
-                    (player1_id, player1_new_elo, player2_id, player2_new_elo, player1_id, player2_id),
+                    """
+                    BEGIN;
+                    UPDATE players SET elo_rating = CASE 
+                        WHEN player_id = %s THEN %s 
+                        WHEN player_id = %s THEN %s 
+                    END WHERE player_id IN (%s, %s);
+                    INSERT INTO matches (match_id, processed) VALUES (%s, TRUE)
+                    ON CONFLICT (match_id) DO UPDATE SET processed = TRUE;
+                    COMMIT;
+                    """,
+                    (player1_id, player1_new_elo, player2_id, player2_new_elo, player1_id, player2_id, match_id),
                 )
 
             conn.commit()

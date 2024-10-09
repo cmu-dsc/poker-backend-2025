@@ -24,3 +24,9 @@ variable "batch_size" {
   type        = number
   default     = 25
 }
+
+variable "maximum_batching_window_in_seconds" {
+  description = "The maximum amount of time to gather records before invoking the function, in seconds"
+  type        = number
+  default     = 60
+}
