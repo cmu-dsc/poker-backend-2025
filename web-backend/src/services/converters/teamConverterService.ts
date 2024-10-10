@@ -14,7 +14,6 @@ export const convertTeamDaoToDto = (
   return {
     teamId: teamDao.id,
     teamName: teamDao.name,
-    // TODO add bot converter
     activeBot: convertBotDaoToDto(teamDao.activeBot),
     members: teamDao.members
       ? teamDao.members.map((member: UserDao) => member.id)

@@ -68,8 +68,6 @@ To test locally, run cloud-sql-proxy using the [script](/setupproxy.sh).
 The data is stored in MySQL, the schema is as follows:
 
 ```mermaid
-erDiagram
-
 %% Enums
 PermissionLevel {
   ADMIN
@@ -85,22 +83,23 @@ UserDao {
   Boolean isBlocked
 }
 UserDao ||--o{ TeamInviteDao : "invites"
-UserDao }o--|| TeamDao : "TeamDao"
+UserDao }o--|| TeamDao : "team"
 
 %% TeamDao model
 TeamDao {
   Int id PK
   String name
   Boolean isDeleted
-  Int activeBotId FK
+  Int activeBotId FK @unique
   Int elo
 }
 TeamDao ||--o{ UserDao : "members"
-TeamDao ||--o{ TeamInviteDao : "TeamInviteDaos"
-TeamDao ||--o{ TeamMatchDao : "TeamMatchDaos"
+TeamDao ||--o{ TeamInviteDao : "invites"
+TeamDao ||--o{ TeamMatchDao : "teamMatches"
 TeamDao ||--o{ MatchRequestDao : "requestingMatches"
 TeamDao ||--o{ MatchRequestDao : "requestedMatches"
 TeamDao ||--o{ BotDao : "bots"
+TeamDao }o--|| BotDao : "activeBot"
 
 %% TeamMatchDao model
 TeamMatchDao {
@@ -121,7 +120,7 @@ MatchDao {
   Boolean isCompleted
   Int matchRequestId FK @unique
 }
-MatchDao ||--o{ TeamMatchDao : "teamMatch"
+MatchDao ||--o{ TeamMatchDao : "teamMatches"
 MatchDao }o--|| MatchRequestDao : "matchRequest"
 
 %% TeamInviteDao model
@@ -139,7 +138,6 @@ MatchRequestDao {
   Int id PK
   Int requestingTeamId FK
   Int requestedTeamId FK
-  Int matchId FK
   DateTime sendAt
   Boolean isAccepted
 }
@@ -156,6 +154,8 @@ BotDao {
   String storageLocation
 }
 BotDao }o--|| TeamDao : "team"
-BotDao ||--o{ TeamMatchDao : "TeamMatchDao"
+BotDao ||--o{ TeamMatchDao : "teamMatches"
+BotDao }o--|| TeamDao : "activeTeam"
+
 
 ```
