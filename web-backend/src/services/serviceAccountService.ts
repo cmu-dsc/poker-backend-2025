@@ -1,3 +1,4 @@
+import { TeamDao } from '@prisma/client'
 import { exec } from 'child_process'
 import { writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
@@ -84,46 +85,51 @@ async function grantArtifactRegistryWriterRole(
   )
 }
 
-async function createServiceAccountAndResources(githubUsername: string) {
-  const username = githubUsername.toLowerCase().replace(/[^a-z0-9-]/g, '')
-  const projectId = 'pokerai-417521'
-  const serviceAccountId = username
-  const displayName = username
-  const serviceAccountEmail = `${username}@${projectId}.iam.gserviceaccount.com`
-  const githubRepoRef = `${githubUsername}/poker-engine-2024`
-  const workloadIdentityPoolId =
-    'projects/979321260256/locations/global/workloadIdentityPools/github'
-  const location = 'us-east4'
-  const repositoryId = username
+async function createServiceAccountAndResources(team: TeamDao) {
+  /*
+   *  TODO implement any additional setup steps here
+   */
 
-  try {
-    await logCurrentServiceAccount()
-    // Step 1: Create a service account
-    await createServiceAccount(projectId, serviceAccountId, displayName)
 
-    // Step 2: Bind the GitHub repository to the service account
-    await bindGitHubRepoToServiceAccount(
-      projectId,
-      serviceAccountEmail,
-      githubRepoRef,
-      workloadIdentityPoolId,
-    )
+  // const username = githubUsername.toLowerCase().replace(/[^a-z0-9-]/g, '')
+  // const projectId = 'pokerai-417521'
+  // const serviceAccountId = username
+  // const displayName = username
+  // const serviceAccountEmail = `${username}@${projectId}.iam.gserviceaccount.com`
+  // const githubRepoRef = `${githubUsername}/poker-engine-2024`
+  // const workloadIdentityPoolId =
+  //   'projects/979321260256/locations/global/workloadIdentityPools/github'
+  // const location = 'us-east4'
+  // const repositoryId = username
 
-    // Step 3: Create an Artifact Registry repository
-    await createArtifactRegistryRepo(projectId, location, repositoryId)
+  // try {
+  //   await logCurrentServiceAccount()
+  //   // Step 1: Create a service account
+  //   await createServiceAccount(projectId, serviceAccountId, displayName)
 
-    // Step 4: Grant the Artifact Registry Writer role to the service account for the specific repository
-    await grantArtifactRegistryWriterRole(
-      projectId,
-      location,
-      repositoryId,
-      serviceAccountEmail,
-    )
+  //   // Step 2: Bind the GitHub repository to the service account
+  //   await bindGitHubRepoToServiceAccount(
+  //     projectId,
+  //     serviceAccountEmail,
+  //     githubRepoRef,
+  //     workloadIdentityPoolId,
+  //   )
 
-    console.log('Service account and resources setup completed successfully.')
-  } catch (error) {
-    console.error('Error setting up the service account and resources:', error)
-  }
+  //   // Step 3: Create an Artifact Registry repository
+  //   await createArtifactRegistryRepo(projectId, location, repositoryId)
+
+  //   // Step 4: Grant the Artifact Registry Writer role to the service account for the specific repository
+  //   await grantArtifactRegistryWriterRole(
+  //     projectId,
+  //     location,
+  //     repositoryId,
+  //     serviceAccountEmail,
+  //   )
+
+  //   console.log('Service account and resources setup completed successfully.')
+  // } catch (error) {
+  //   console.error('Error setting up the service account and resources:', error)
+  // }
 }
 
 export default createServiceAccountAndResources

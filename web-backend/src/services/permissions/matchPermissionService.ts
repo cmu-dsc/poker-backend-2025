@@ -1,23 +1,26 @@
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { MatchDao, TeamMatchDao, UserDao } from '@prisma/client'
-import { getUserById } from '../userService'
+import { getUserByIdInclTeam } from '../userService'
 import { getMatchById } from '../matchService'
-import { convertMatchDaoWithTeamMatchDaosToDto } from '../converters/matchConverterService'
 
-export const checkAndrewIdPermissionsForMatch = async (
+/**
+ * Check if the user has permission to access the match based on whether the user is in one of the teams
+ * @param {number} userId the id of the user
+ * @param {number} matchId the id of the match
+ * @returns {Promise<boolean>} whether the user has permission to access the match
+ */
+export const checkUserIdPermissionForMatchId = async (
   userId: number,
   matchId: number,
 ): Promise<boolean> => {
-  const user: UserDao = await getUserById(userId)
+  const user: UserDao = await getUserByIdInclTeam(userId)
   const match: MatchDao & {
-    teamMatch: TeamMatchDao[]
+    teamMatches: TeamMatchDao[]
   } = await getMatchById(matchId)
 
-  const matchDto = await convertMatchDaoWithTeamMatchDaosToDto(match)
-
   if (
-    user.teamId === matchDto.teamMatches[0].teamId ||
-    user.teamId === matchDto.teamMatches[1].teamId
+    user.teamId === match.teamMatches[0].teamId ||
+    user.teamId === match.teamMatches[1].teamId
   ) {
     return true
   }

@@ -24,9 +24,9 @@ export const getEngineLogPath = (
 /**
  * Get the path to the bot log for a match for a given team
  * @param {MatchDto} match the match to get the log log path for
- * @param {string} teamId the team to get the bot log for
+ * @param {number} teamId the team to get the bot log for
  * @returns {string} the path to the bot log of the given team
  */
-export const getBotLogPathTeam = (match: MatchDao, teamId: string): string => {
+export const getBotLogPathTeam = (match: MatchDao, teamId: number): string => {
   return [MATCH_PREFIX + match.matchId, teamId, BOT_LOG].join('/')
 }

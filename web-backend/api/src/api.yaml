@@ -499,8 +499,8 @@ components:
         members:
           type: array
           items:
-            type: string
-            example: "acarnegie"
+            type: number
+            example: 1
         wins:
           type: number
           example: 10

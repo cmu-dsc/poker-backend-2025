@@ -7,7 +7,7 @@ export type TeamDto = {
     teamId: number;
     teamName: string;
     activeBot?: BotDto;
-    members: Array<string>;
+    members: Array<number>;
     wins?: number;
     losses?: number;
     elo?: number;

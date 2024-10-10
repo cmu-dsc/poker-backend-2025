@@ -9,16 +9,15 @@ import { convertBotDaoToDto } from './botConverterService'
  * @returns the team DTO
  */
 export const convertTeamDaoToDto = (
-  teamDao: TeamDao & { members: UserDao[], activeBot: BotDao },
+  teamDao: TeamDao & { members: UserDao[]; activeBot: BotDao },
 ): TeamDto => {
-
   return {
     teamId: teamDao.id,
     teamName: teamDao.name,
     // TODO add bot converter
     activeBot: convertBotDaoToDto(teamDao.activeBot),
     members: teamDao.members
-      ? teamDao.members.map((member: UserDao) => member.email)
+      ? teamDao.members.map((member: UserDao) => member.id)
       : [],
     isDeleted: teamDao.isDeleted,
     elo: teamDao.elo,
@@ -31,7 +30,7 @@ export const convertTeamDaoToDto = (
  * @returns {TeamDto} the team DTO
  */
 export const convertTeamDaoWithStatsToDto = async (
-  teamDao: TeamDao & { members: UserDao[], activeBot: BotDao },
+  teamDao: TeamDao & { members: UserDao[]; activeBot: BotDao },
   lastXGames: undefined | number = undefined,
 ): Promise<TeamDto> => {
   let teamMatches = await dbClient.teamMatchDao.findMany({
@@ -41,7 +40,7 @@ export const convertTeamDaoWithStatsToDto = async (
     include: {
       match: {
         select: {
-          teamMatch: true,
+          teamMatches: true,
           timestamp: true,
         },
       },
@@ -53,29 +52,29 @@ export const convertTeamDaoWithStatsToDto = async (
   }
 
   const wonMatches = teamMatches.filter(teamMatchDao => {
-    const { teamMatch } = teamMatchDao.match
+    const { teamMatches } = teamMatchDao.match
     if (
-      teamMatch.length !== 2 &&
-      !teamMatch.map(tmd => tmd.teamId).includes(teamDao.id)
+      teamMatches.length !== 2 &&
+      !teamMatches.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatch[0].teamId === teamDao.id
-      ? teamMatch[0].bankroll > teamMatch[1].bankroll
-      : teamMatch[1].bankroll > teamMatch[0].bankroll
+    return teamMatches[0].teamId === teamDao.id
+      ? teamMatches[0].bankroll > teamMatches[1].bankroll
+      : teamMatches[1].bankroll > teamMatches[0].bankroll
   }).length
 
   const lostMatches = teamMatches.filter(teamMatchDao => {
-    const { teamMatch } = teamMatchDao.match
+    const { teamMatches } = teamMatchDao.match
     if (
-      teamMatch.length !== 2 &&
-      !teamMatch.map(tmd => tmd.teamId).includes(teamDao.id)
+      teamMatches.length !== 2 &&
+      !teamMatches.map(tmd => tmd.teamId).includes(teamDao.id)
     ) {
       return false
     }
-    return teamMatch[0].teamId === teamDao.id
-      ? teamMatch[0].bankroll < teamMatch[1].bankroll
-      : teamMatch[1].bankroll < teamMatch[0].bankroll
+    return teamMatches[0].teamId === teamDao.id
+      ? teamMatches[0].bankroll < teamMatches[1].bankroll
+      : teamMatches[1].bankroll < teamMatches[0].bankroll
   }).length
 
   return {

@@ -16,7 +16,7 @@ model UserDao {
   id              Int             @id @unique @default(autoincrement())
   email           String          @unique
   permissionLevel PermissionLevel @default(USER)
-  TeamDao         TeamDao?        @relation(fields: [teamId], references: [id])
+  team            TeamDao?        @relation(fields: [teamId], references: [id])
   teamId          Int?
   invites         TeamInviteDao[]
   isBlocked       Boolean         @default(false)
@@ -25,14 +25,14 @@ model UserDao {
 model TeamDao {
   id                Int               @id @unique @default(autoincrement())
   members           UserDao[]
-  TeamInviteDao     TeamInviteDao[]
+  invites           TeamInviteDao[]
   name              String
   isDeleted         Boolean           @default(false)
-  TeamMatchDao      TeamMatchDao[]
+  teamMatches       TeamMatchDao[]
   requestingMatches MatchRequestDao[] @relation("RequestingTeam")
   requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
-  activeBot         BotDao            @relation(fields: [activeBotId], references: [id])
-  activeBotId       Int
+  activeBot         BotDao            @relation("ActiveBot", fields: [activeBotId], references: [id])
+  activeBotId       Int               @unique
   bots              BotDao[]          @relation("bots")
   elo               Int               @default(1000)
 }
@@ -51,7 +51,7 @@ model TeamMatchDao {
 model MatchDao {
   matchId        Int              @id @unique @default(autoincrement())
   timestamp      DateTime         @default(now())
-  teamMatch      TeamMatchDao[]
+  teamMatches    TeamMatchDao[]
   isCompleted    Boolean          @default(false)
   matchRequest   MatchRequestDao? @relation(fields: [matchRequestId], references: [id])
   matchRequestId Int?             @unique
@@ -84,6 +84,7 @@ model BotDao {
   teamId          Int
   created         DateTime       @default(now())
   storageLocation String
-  TeamDao         TeamDao[]
-  TeamMatchDao    TeamMatchDao[]
+  teamMatches     TeamMatchDao[]
+  activeTeam      TeamDao?       @relation("ActiveBot")
+  activeTeamId    Int?           @unique 
 }

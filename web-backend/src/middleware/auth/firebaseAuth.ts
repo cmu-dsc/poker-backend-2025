@@ -54,7 +54,7 @@ const firebaseAuthMiddleware = async (
     //const [andrewId] = email.split('@')
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    req.id = Number(idToken)
+    req.userId = Number(idToken)
     // @ts-ignore
     logger.info(`User ${req.id} authenticated`)
 

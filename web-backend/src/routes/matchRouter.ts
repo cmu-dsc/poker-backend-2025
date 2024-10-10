@@ -3,22 +3,25 @@ import {
   getMatchByMatchIdLogsBot,
   getMatchByMatchIdLogsEngineCSV,
   getMatchByMatchIdLogsEngineTXT,
-  getMatchTeamByGithubUsername,
+  getMatchTeamByTeamId,
 } from 'src/controllers/matchController'
 import asyncWrapper from 'src/middleware/errorhandler/asyncWrapper'
 
 /**
- * The router for the book resource.
+ * The router for the match resource.
  */
 const matchRouter = () => {
   const router = Router()
 
+  router.get('/team/:teamId', asyncWrapper(getMatchTeamByTeamId))
   router.get(
-    '/team/:githubUsername',
-    asyncWrapper(getMatchTeamByGithubUsername),
+    '/:matchId/logs/engine/csv',
+    asyncWrapper(getMatchByMatchIdLogsEngineCSV),
   )
-  router.get('/:matchId/logs/engine/csv', asyncWrapper(getMatchByMatchIdLogsEngineCSV))
-  router.get('/:matchId/logs/engine/txt', asyncWrapper(getMatchByMatchIdLogsEngineTXT))
+  router.get(
+    '/:matchId/logs/engine/txt',
+    asyncWrapper(getMatchByMatchIdLogsEngineTXT),
+  )
   router.get('/:matchId/logs/bot', asyncWrapper(getMatchByMatchIdLogsBot))
 
   return router

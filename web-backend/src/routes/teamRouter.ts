@@ -1,24 +1,24 @@
 import { Router } from 'express'
 import {
-  deleteTeamByGithubUsername,
+  deleteTeamByTeamId,
   getTeam,
-  getTeamByGithubUsername,
+  getTeamByTeamId,
   postTeam,
-  putTeamByGithubUsername,
+  putTeamByTeamId,
 } from 'src/controllers/teamController'
 import asyncWrapper from 'src/middleware/errorhandler/asyncWrapper'
 
 /**
- * The router for the book resource.
+ * The router for the team resource.
  */
 const teamRouter = () => {
   const router = Router()
 
   router.post('/', asyncWrapper(postTeam))
   router.get('/', asyncWrapper(getTeam))
-  router.get('/:githubUsername', asyncWrapper(getTeamByGithubUsername))
-  router.put('/:githubUsername', asyncWrapper(putTeamByGithubUsername))
-  router.delete('/:githubUsername', asyncWrapper(deleteTeamByGithubUsername))
+  router.get('/:teamId', asyncWrapper(getTeamByTeamId))
+  router.put('/:teamId', asyncWrapper(putTeamByTeamId))
+  router.delete('/:teamId', asyncWrapper(deleteTeamByTeamId))
 
   return router
 }

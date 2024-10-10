@@ -72,6 +72,7 @@ CREATE TABLE "BotDao" (
     "teamId" INTEGER NOT NULL,
     "created" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "storageLocation" TEXT NOT NULL,
+    "activeTeamId" INTEGER,
 
     CONSTRAINT "BotDao_pkey" PRIMARY KEY ("id")
 );
@@ -84,6 +85,9 @@ CREATE UNIQUE INDEX "UserDao_email_key" ON "UserDao"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TeamDao_id_key" ON "TeamDao"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TeamDao_activeBotId_key" ON "TeamDao"("activeBotId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TeamMatchDao_id_key" ON "TeamMatchDao"("id");
@@ -102,6 +106,9 @@ CREATE UNIQUE INDEX "MatchRequestDao_id_key" ON "MatchRequestDao"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BotDao_id_key" ON "BotDao"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BotDao_activeTeamId_key" ON "BotDao"("activeTeamId");
 
 -- AddForeignKey
 ALTER TABLE "UserDao" ADD CONSTRAINT "UserDao_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "TeamDao"("id") ON DELETE SET NULL ON UPDATE CASCADE;
