@@ -1,8 +1,15 @@
-data "archive_file" "elo_function_zip" {
+data "archive_file" "elo_function" {
   type        = "zip"
   source_dir  = "${path.module}/../../elo-function"
   output_path = "${path.module}/elo_function.zip"
-  excludes    = [".venv", "__pycache__", "*.pyc", "*.pyo", "*.pyd"]
+  excludes    = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", "build", "dist"]
+}
+
+resource "aws_s3_object" "lambda_function" {
+  bucket = var.lambda_code_bucket
+  key    = var.lambda_code_key
+  source = data.archive_file.elo_function.output_path
+  etag   = filemd5(data.archive_file.elo_function.output_path)
 }
 
 # SQS Queue
@@ -13,12 +20,13 @@ resource "aws_sqs_queue" "match_results_queue" {
 
 # Lambda Function
 resource "aws_lambda_function" "elo_update_function" {
-  filename          = data.archive_file.elo_function_zip.output_path
-  function_name    = "elo-update-function"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.lambda_handler"
-  source_code_hash = data.archive_file.elo_function_zip.output_base64sha256
-  runtime          = "python3.12"
+  function_name = "elo-update-function"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.12"
+
+  s3_bucket = var.lambda_code_bucket
+  s3_key    = var.lambda_code_key
 
   environment {
     variables = {
@@ -31,6 +39,8 @@ resource "aws_lambda_function" "elo_update_function" {
   }
 
   tags = var.tags
+
+  depends_on = [aws_s3_object.lambda_function]
 }
 
 # IAM Role for Lambda
@@ -76,6 +86,14 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "rds-data:ExecuteStatement",
+          "rds-data:BatchExecuteStatement"
+        ]
+        Resource = var.db_host_arn
       }
     ]
   })

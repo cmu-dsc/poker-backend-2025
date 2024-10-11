@@ -9,13 +9,7 @@ output "db_reader_endpoint" {
   value       = module.rds.reader_endpoint
 }
 
-# S3 Outputs
-output "poker_agents_bucket_id" {
-  description = "The ID of the poker-agents S3 bucket"
-  value       = module.s3.poker_agents_bucket_id
-}
-
-output "poker_logs_bucket_id" {
-  description = "The ID of the poker-logs S3 bucket"
-  value       = module.s3.poker_logs_bucket_id
+output "github_actions_role_arn" {
+  description = "The ARN of the IAM role for GitHub Actions"
+  value       = module.gha.github_actions_role_arn
 }
