@@ -8,8 +8,4 @@ export default load({
     type: String,
     optional: false,
   },
-  GCLOUD_ADMIN_KEY: {
-    type: String,
-    optional: false,
-  },
 })

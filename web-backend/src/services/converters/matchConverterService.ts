@@ -1,21 +1,30 @@
 import { MatchDto } from '@api/generated'
+import { BotDao, MatchDao, TeamDao, TeamMatchDao } from '@prisma/client'
 
-export const convertMatchDaoWithTeamMatchDaosToDto = (
-  matchDao: any,
+/**
+ * Convert a match DAO to a match DTO
+ * @param {MatchDao & { teamMatchDaos: TeamMatchDao[] }} matchDao the match DAO to convert
+ * @returns {MatchDto} the match DTO
+ */
+export const convertMatchDaoWithTeamMatchesToDto = (
+  matchDao: MatchDao & {
+    teamMatches: (TeamMatchDao & { bot: BotDao; team: TeamDao })[]
+  },
 ): MatchDto => {
-  if (
-    matchDao.teamMatchDaos === undefined ||
-    matchDao.teamMatchDaos.length !== 2
-  ) {
+  if (matchDao.teamMatches === undefined || matchDao.teamMatches.length !== 2) {
     throw new Error('Invalid TeamMatchDaos in MatchDao')
   }
 
   return {
     matchId: matchDao.matchId,
     timestamp: (matchDao.timestamp as Date).toISOString(),
-    team1Id: matchDao.teamMatchDaos[0].teamId,
-    team2Id: matchDao.teamMatchDaos[1].teamId,
-    team1Score: matchDao.teamMatchDaos[0].bankroll,
-    team2Score: matchDao.teamMatchDaos[1].bankroll,
+    isCompleted: matchDao.isCompleted,
+    isRequestedMatch: Boolean(matchDao.matchRequestId),
+    teamMatches: matchDao.teamMatches.map(tm => ({
+      teamId: tm.team.id,
+      teamName: tm.team.name,
+      botVersion: tm.bot.version,
+      bankroll: tm.bankroll,
+    })),
   }
 }

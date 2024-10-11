@@ -65,6 +65,139 @@ paths:
           description: Unauthorized
         "422":
           description: Not in a team
+  /user/team/invite:
+    get:
+      tags:
+        - user
+      summary: Get all team invites
+      description: Get all team invites for a user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamInviteDto"
+        "401":
+          description: Unauthorized
+  /user/team/invite/{teamInviteId}/accept:
+    put:
+      tags:
+        - user
+      summary: Accept a team invite
+      description: Accept a team invite
+      parameters:
+        - in: path
+          name: teamInviteId
+          required: true
+          schema:
+            type: number
+          description: The team invite id
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Team invite already accepted
+  /user/team/invite/{teamInviteId}/reject:
+    put:
+      tags:
+        - user
+      summary: Reject a team invite
+      description: Reject a team invite
+      parameters:
+        - in: path
+          name: teamInviteId
+          required: true
+          schema:
+            type: number
+          description: The team invite id
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Team invite already rejected
+
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get all users
+      description: Get all users
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserDto"
+  /user/{userId}:
+    get:
+      tags:
+        - user
+      summary: Get a user by user id
+      description: Get a user by user id
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+          description: The user id
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+        "404":
+          description: Not Found
+    put:
+      tags:
+        - user
+      summary: Update a user by user id
+      description: Update a user by user id
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+          description: The user id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDto"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+
 
   /team:
     post:
@@ -92,7 +225,7 @@ paths:
         "403":
           description: Forbidden
         "422":
-          description: User already in a team, github username already taken, or team already exists
+          description: User already in a team, or team already exists
     get:
       tags:
         - team
@@ -115,11 +248,11 @@ paths:
                 items:
                   $ref: "#/components/schemas/TeamDto"
   
-  /team/{githubUsername}:
+  /team/{teamId}:
     get:
       tags:
         - team
-      summary: Get a team by github username
+      summary: Get a team by teamId
       description: Get a team by github username
       parameters:
         - in: path
@@ -192,7 +325,7 @@ paths:
         "403":
           description: Forbidden
 
-  /match/team/{githubUsername}:
+  /match/team/{teamId}:
     get:
       tags:
         - match
@@ -306,63 +439,171 @@ components:
     UserDto:
       type: object
       properties:
-        andrewId:
+        userId:
+          type: number
+          example: 0
+        email:
           type: string
           example: "acarnegie"
+        permissionLevel:
+          type: string
+          enum: ["ADMIN", "USER"]
         teamId:
+          type: number
+          example: 0
+        teamName:
           type: string
           example: "andrewc"
       required:
         - userId
+        - email
+        - permissionLevel
+    TeamInviteDto:
+      type: object
+      properties:
+        teamInviteId:
+          type: number
+          example: 0
+        teamId:
+          type: number
+          example: 0
+        teamName:
+          type: string
+          example: "andrewc"
+        inviteeId:
+          type: number
+          example: 0
+        inviteeEmail:
+          type: string
+          example: "acarnegie@cmu.edu"
+        sendAt:
+          type: string
+          format: date-time
+          example: "2021-04-01T12:00:00Z"
+      required:
+        - teamInviteId
+        - teamId
+        - inviteeId
     TeamDto:
       type: object
       properties:
-        githubUsername:
+        teamId:
+          type: number
+          example: 0
+        teamName:
           type: string
           example: "andrewc"
+        activeBot:
+          type: object
+          $ref: "#/components/schemas/BotDto"
         members:
           type: array
           items:
-            type: string
-            example: "acarnegie"
+            type: number
+            example: 1
         wins:
           type: number
           example: 10
         losses:
           type: number
           example: 2
+        elo:
+          type: number
+          example: 1000
+        isDeleted:
+          type: boolean
+          example: false
       required:
-        - githubUsername
+        - teamName
+        - teamId
         - members
+    BotDto:
+      type: object
+      properties:
+        botId:
+          type: number
+          example: 0
+        botVersion:
+          type: number
+          example: 10
+        createdAt:
+          type: string
+          format: date-time
+          example: "2021-04-01T12:00:00Z"
+      required:
+        - botId
+        - botVersion
+        - createdAt
     MatchDto:
       type: object
       properties:
         matchId:
-          type: string
-          example: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-        team1Id:
-          type: string
-          example: "andrewc"
-        team2Id:
-          type: string
-          example: "andrewm"
+          type: number
+          example: 0
         timestamp:
           type: string
           format: date-time
           example: "2021-04-01T12:00:00Z"
-        team1Score:
-          type: number
-          example: 1000
-        team2Score:
-          type: number
-          example: 0
+        isRequestedMatch:
+          type: boolean
+          example: true
+        teamMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMatchDto"
+        isCompleted:
+          type: boolean
+          example: true
       required:
         - matchId
-        - team1Id
-        - team2Id
+        - isRequestedMatchjust 
         - timestamp
-        - team1Score
-        - team2Score
+        - teamMatches
+        - isCompleted
+    TeamMatchDto:
+      type: object
+      properties:
+        teamId:
+          type: number
+          example: 0
+        teamName:
+          type: string
+          example: "andrewc"
+        botVersion:
+          type: number
+          example: 10
+        bankroll:
+          type: number
+          example: 2000
+      required:
+        - teamId
+        - teamName
+        - botVersion
+        - bankroll
+    MatchRequestDto:
+      type: object
+      properties:
+        matchRequestId:
+          type: number
+          example: 0
+        requestingTeamId:
+          type: number
+          example: 0
+        requestedTeamId:
+          type: number
+          example: 0
+        requestedAt:
+          type: string
+          format: date-time
+          example: "2021-04-01T12:00:00Z"
+        accepted:
+          type: boolean
+          example: true
+      required:
+        - matchRequestId
+        - requestingTeamId
+        - requestedTeamId
+        - requestedAt
     DownloadLinkDto:
       type: object
       properties:

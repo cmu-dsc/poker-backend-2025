@@ -3,7 +3,7 @@ import { getUserMe, postUserTeamLeave } from 'src/controllers/userController'
 import asyncWrapper from 'src/middleware/errorhandler/asyncWrapper'
 
 /**
- * The router for the book resource.
+ * The router for the user resource.
  */
 const userRouter = () => {
   const router = Router()

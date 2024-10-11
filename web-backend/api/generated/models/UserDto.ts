@@ -3,7 +3,16 @@
 /* tslint:disable */
 /* eslint-disable */
 export type UserDto = {
-    andrewId?: string;
-    teamId?: string;
+    userId: number;
+    email: string;
+    permissionLevel: UserDto.permissionLevel;
+    teamId?: number;
+    teamName?: string;
 };
+export namespace UserDto {
+    export enum permissionLevel {
+        ADMIN = 'ADMIN',
+        USER = 'USER',
+    }
+}
 

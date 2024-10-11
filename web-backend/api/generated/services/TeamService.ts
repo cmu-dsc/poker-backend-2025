@@ -26,7 +26,7 @@ export class TeamService {
                 400: `Bad Request`,
                 401: `Unauthorized`,
                 403: `Forbidden`,
-                422: `User already in a team, github username already taken, or team already exists`,
+                422: `User already in a team, or team already exists`,
             },
         });
     }
@@ -49,7 +49,7 @@ export class TeamService {
         });
     }
     /**
-     * Get a team by github username
+     * Get a team by teamId
      * Get a team by github username
      * @param githubUsername The github username of the team
      * @returns TeamDto OK
@@ -60,7 +60,7 @@ export class TeamService {
     ): CancelablePromise<TeamDto> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/team/{githubUsername}',
+            url: '/team/{teamId}',
             path: {
                 'githubUsername': githubUsername,
             },
@@ -83,7 +83,7 @@ export class TeamService {
     ): CancelablePromise<TeamDto> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/team/{githubUsername}',
+            url: '/team/{teamId}',
             path: {
                 'githubUsername': githubUsername,
             },
@@ -110,7 +110,7 @@ export class TeamService {
     ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/team/{githubUsername}',
+            url: '/team/{teamId}',
             path: {
                 'githubUsername': githubUsername,
             },
