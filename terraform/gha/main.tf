@@ -43,8 +43,11 @@ resource "aws_iam_role_policy" "github_actions_lambda_update" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["s3:PutObject"]
-        Resource = [var.lambda_code_bucket_arn]
+        Action   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
+        Resource = [
+          var.lambda_code_bucket_arn,
+          "${var.lambda_code_bucket_arn}/*"
+        ]
       },
       {
         Effect   = "Allow"
