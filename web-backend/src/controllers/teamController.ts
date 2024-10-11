@@ -1,6 +1,5 @@
 import { TeamDto } from '@api/generated'
 import { Request, Response } from 'express'
-import createServiceAccountAndResources from 'src/services/serviceAccountService'
 import { checkUserIdPermissionsForTeamId } from 'src/services/permissions/teamPermissionService'
 import {
   createTeam,
@@ -37,14 +36,7 @@ export const postTeam = async (
   } = await createTeam(team, req.userId!)
   const teamDto = convertTeamDaoToDto(createdTeam)
 
-  try {
-    await createServiceAccountAndResources(createdTeam)
-  } catch (error) {
-    console.error(
-      'An error occurred while creating service account and resources:',
-      error,
-    )
-  }
+  // TODO: any post team creation
 
   res.status(201).json(teamDto)
 }

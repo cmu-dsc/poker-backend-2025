@@ -52,6 +52,4 @@ __fixtures__/custom-modules-dir/patches/
 
 .env
 
-**/cloud-sql-proxy
-
 *.csv

@@ -6,8 +6,7 @@ import {
   getEngineLogPath,
 } from 'src/config/bucket'
 import { MatchDao, TeamMatchDao } from '@prisma/client'
-import { dbClient, storageClient } from 'src/server'
-import { GetSignedUrlConfig } from '@google-cloud/storage'
+import { dbClient } from 'src/server'
 import { convertMatchDaoWithTeamMatchesToDto } from './converters/matchConverterService'
 
 /**
@@ -75,7 +74,7 @@ export const getEngineLogDownloadLinkCSV = async (
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getEngineLogPath(match, 'csv'))
+    return await getEngineLogPath(match, 'csv')
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }
@@ -92,7 +91,7 @@ export const getEngineLogDownloadLinkTXT = async (
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getEngineLogPath(match, 'txt'))
+    return await getEngineLogPath(match, 'txt') // TODO: get S3 key
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }
@@ -111,28 +110,8 @@ export const getBotLogDownloadLink = async (
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getBotLogPathTeam(match, teamId))
+    return await getBotLogPathTeam(match, teamId) // TODO: get S3 key
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Bot log not found')
   }
-}
-
-/**
- * Get the signed link for a path in the bucket
- * @param {string} path the path to the file in the bucket
- * @returns the signed link
- */
-const getSignedLinkForPath = async (path: string): Promise<string> => {
-  const options: GetSignedUrlConfig = {
-    version: 'v4',
-    action: 'read',
-    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-  }
-
-  const [url] = await storageClient
-    .bucket(BUCKET_NAME)
-    .file(path)
-    .getSignedUrl(options)
-
-  return url
 }
