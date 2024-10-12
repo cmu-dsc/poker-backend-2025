@@ -68,8 +68,13 @@ def lambda_handler(event, context):
                 player2_elo = player_ratings[player2_id]
 
                 # Calculate new Elo ratings
-                player1_new_elo = calculate_new_elo(player1_elo, player2_elo, result)
-                player2_new_elo = calculate_new_elo(player2_elo, player1_elo, "loss" if result == "win" else "win")
+
+                if result == "tie":
+                    player1_new_elo = player1_elo
+                    player2_new_elo = player2_elo
+                else: 
+                    player1_new_elo = calculate_new_elo(player1_elo, player2_elo, result)
+                    player2_new_elo = calculate_new_elo(player2_elo, player1_elo, "loss" if result == "win" else "win")
 
                 # Update Elo ratings and mark match as processed in a single transaction
                 cur.execute(
