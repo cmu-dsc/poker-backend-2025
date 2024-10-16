@@ -5,7 +5,7 @@ REPOSITORY_URL=$1
 AWS_REGION=$2
 
 # Navigate to the web-backend directory
-cd ../../web-backend
+cd ../web-backend
 
 # Build the Docker image
 docker build -t backend:latest .

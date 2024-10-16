@@ -48,7 +48,7 @@ variable "db_password" {
 variable "app_port" {
   description = "Port on which the app runs"
   type        = number
-  default     = 8080
+  default     = 80
 }
 
 variable "desired_count" {

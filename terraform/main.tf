@@ -19,10 +19,10 @@ resource "aws_security_group" "pokerbots_sg" {
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    self        = true
+    from_port = 5432
+    to_port   = 5432
+    protocol  = "tcp"
+    self      = true
   }
 
   ingress {
@@ -43,17 +43,17 @@ resource "aws_security_group" "pokerbots_sg" {
 }
 
 module "backend" {
-  source              = "./backend"
-  aws_region          = var.aws_region
-  tags                = var.tags
-  vpc_id              = data.aws_vpc.default.id
-  subnet_ids          = data.aws_subnets.default.ids
-  db_host             = module.rds.cluster_endpoint
-  db_reader_endpoint  = module.rds.reader_endpoint
-  db_name             = "pokerbotsdb"
-  db_username         = var.db_username
-  db_password         = var.db_password
-  security_group_id   = aws_security_group.pokerbots_sg.id
+  source             = "./backend"
+  aws_region         = var.aws_region
+  tags               = var.tags
+  vpc_id             = data.aws_vpc.default.id
+  subnet_ids         = data.aws_subnets.default.ids
+  db_host            = module.rds.cluster_endpoint
+  db_reader_endpoint = module.rds.reader_endpoint
+  db_name            = "pokerbotsdb"
+  db_username        = var.db_username
+  db_password        = var.db_password
+  security_group_id  = aws_security_group.pokerbots_sg.id
 }
 
 module "rds" {
