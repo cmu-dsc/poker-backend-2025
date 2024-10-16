@@ -1,8 +1,7 @@
 import boto3
-import psycopg2
+import psycopg
 import os
 import json
-from psycopg2 import sql
 
 sqs = boto3.client("sqs")
 
@@ -16,7 +15,7 @@ SQS_QUEUE_URL = os.environ["SQS_QUEUE_URL"]
 
 def connect_to_db():
     """Establish a connection to the PostgreSQL database."""
-    return psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    return psycopg.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
 
 
 def calculate_new_elo(player_elo, opponent_elo, result):
