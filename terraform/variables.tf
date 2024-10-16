@@ -13,11 +13,6 @@ variable "tags" {
   }
 }
 
-variable "db_subnet_group_name" {
-  description = "Name of DB subnet group"
-  type        = string
-}
-
 variable "db_username" {
   description = "Username for the master DB user"
   type        = string
@@ -28,9 +23,4 @@ variable "db_password" {
   description = "Password for the master DB user"
   type        = string
   sensitive   = true
-}
-
-variable "vpc_security_group_ids" {
-  description = "List of VPC security groups to associate"
-  type        = list(string)
 }
