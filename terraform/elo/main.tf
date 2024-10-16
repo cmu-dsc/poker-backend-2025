@@ -1,10 +1,8 @@
-# SQS Queue
 resource "aws_sqs_queue" "match_results_queue" {
   name = "match-results-queue"
   tags = var.tags
 }
 
-# Lambda Function
 resource "aws_lambda_function" "elo_update_function" {
   function_name = "elo-update-function"
   role          = aws_iam_role.lambda_role.arn
@@ -27,7 +25,6 @@ resource "aws_lambda_function" "elo_update_function" {
   tags = var.tags
 }
 
-# IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
   name = "elo_lambda_role"
 
