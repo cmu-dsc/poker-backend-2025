@@ -54,6 +54,7 @@ module "backend" {
   db_username        = var.db_username
   db_password        = var.db_password
   security_group_id  = aws_security_group.pokerbots_sg.id
+  ecr_repository_url = var.ecr_repository_url
 }
 
 module "rds" {
@@ -88,13 +89,6 @@ module "elo" {
   db_host_arn        = module.rds.arn
   db_username        = var.db_username
   db_password        = var.db_password
-  lambda_code_bucket = module.s3.poker_lambdas_bucket_id
+  lambda_code_bucket = var.lambda_code_bucket
   lambda_code_key    = "elo_function.zip"
-}
-
-module "gha" {
-  source                 = "./gha"
-  tags                   = var.tags
-  lambda_function_arn    = module.elo.lambda_function_arn
-  lambda_code_bucket_arn = module.s3.poker_lambdas_bucket_arn
 }

@@ -73,3 +73,8 @@ variable "security_group_id" {
   description = "The ID of the shared security group"
   type        = string
 }
+
+variable "ecr_repository_url" {
+  description = "The URL of the ECR repository"
+  type        = string
+}

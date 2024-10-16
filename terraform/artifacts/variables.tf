@@ -1,6 +1,10 @@
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
+  default = {
+    Environment = "prod"
+    Project     = "pokerbots-2025"
+  }
 }
 
 variable "github_repositories" {
@@ -9,12 +13,7 @@ variable "github_repositories" {
   default     = ["cmu-dsc/poker-backend-2025", "cmu-dsc/poker-engine-2025"]
 }
 
-variable "lambda_function_arn" {
-  description = "ARN of the Lambda function to update"
-  type        = string
-}
-
-variable "lambda_code_bucket_arn" {
-  description = "ARN of the S3 bucket containing Lambda code"
-  type        = string
+variable "lambda_function_arns" {
+  description = "ARNs of the Lambda functions to update"
+  type        = list(string)
 }

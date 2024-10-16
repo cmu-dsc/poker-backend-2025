@@ -1,14 +1,3 @@
-resource "aws_ecr_repository" "backend" {
-  name                 = "backend"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = var.tags
-}
-
 resource "aws_ecs_cluster" "backend" {
   name = "backend-cluster"
   tags = var.tags
@@ -26,7 +15,7 @@ resource "aws_ecs_task_definition" "backend" {
   container_definitions = jsonencode([
     {
       name  = "backend"
-      image = "${aws_ecr_repository.backend.repository_url}:latest"
+      image = "${var.ecr_repository_url}:latest"
       portMappings = [
         {
           containerPort = var.app_port
@@ -72,6 +61,10 @@ resource "aws_ecs_service" "backend" {
     target_group_arn = aws_lb_target_group.backend.arn
     container_name   = "backend"
     container_port   = var.app_port
+  }
+
+  deployment_controller {
+    type = "ECS"
   }
 
   depends_on = [aws_lb_listener.backend]
@@ -169,16 +162,4 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 
   tags = var.tags
-}
-
-resource "null_resource" "build_and_push_image" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-
-  provisioner "local-exec" {
-    command = "${path.module}/build_and_push.sh ${aws_ecr_repository.backend.repository_url} ${var.aws_region}"
-  }
-
-  depends_on = [aws_ecr_repository.backend]
 }
