@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          token: ${{ secrets.ENGINE_PAT }}
       - name: Zip function
         run: |
           cd match-function
