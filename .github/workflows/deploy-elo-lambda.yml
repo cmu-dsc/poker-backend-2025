@@ -28,4 +28,4 @@ jobs:
     - name: Upload to S3 and update Lambda
       run: |
         aws s3 cp elo_function.zip s3://cmu-poker-lambdas/elo_function.zip
-        aws lambda update-function-code --function-name elo-update-function --s3-bucket cmu-poker-lambdas --s3-key elo_function.zip
+        aws lambda update-function-code --function-name elo-function --s3-bucket cmu-poker-lambdas --s3-key elo_function.zip

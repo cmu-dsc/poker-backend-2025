@@ -1,0 +1,26 @@
+name: Deploy Match Lambda
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Zip function
+        run: |
+          cd match-function
+          zip -r ../match_function.zip .
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Upload to S3 and update Lambda
+        run: |
+          aws s3 cp match_function.zip s3://cmu-poker-lambdas/match_function.zip
+          aws lambda update-function-code --function-name match-function --s3-bucket cmu-poker-lambdas --s3-key match_function.zip

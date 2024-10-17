@@ -3,8 +3,8 @@ resource "aws_sqs_queue" "match_results_queue" {
   tags = var.tags
 }
 
-resource "aws_lambda_function" "elo_update_function" {
-  function_name = "elo-update-function"
+resource "aws_lambda_function" "elo_function" {
+  function_name = "elo-function"
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"
@@ -83,7 +83,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
 # Lambda Event Source Mapping
 resource "aws_lambda_event_source_mapping" "sqs_lambda_trigger" {
   event_source_arn                   = aws_sqs_queue.match_results_queue.arn
-  function_name                      = aws_lambda_function.elo_update_function.arn
+  function_name                      = aws_lambda_function.elo_function.arn
   batch_size                         = var.batch_size
   maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
   enabled                            = true

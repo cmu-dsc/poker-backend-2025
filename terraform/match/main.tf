@@ -1,17 +1,11 @@
-data "archive_file" "match_function_zip" { // TODO: build CI/CD for this
-  type        = "zip"
-  source_dir  = "${path.module}/../../match-function"
-  output_path = "${path.module}/match_function.zip"
-  excludes    = [".venv", "__pycache__", "*.pyc", "*.pyo", "*.pyd"]
-}
-
 resource "aws_lambda_function" "match_function" {
-  filename          = data.archive_file.match_function_zip.output_path
-  function_name    = "match-function"
-  role             = aws_iam_role.match_lambda_role.arn
-  handler          = "lambda_function.lambda_handler"
-  source_code_hash = data.archive_file.match_function_zip.output_base64sha256
-  runtime          = "python3.12"
+  function_name = "match-function"
+  role          = aws_iam_role.match_lambda_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.12"
+
+  s3_bucket = var.lambda_code_bucket
+  s3_key    = var.lambda_code_key
 
   environment {
     variables = {

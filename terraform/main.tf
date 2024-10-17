@@ -80,6 +80,7 @@ module "match" {
   poker_logs_bucket_arn   = module.s3.poker_logs_bucket_arn
   sqs_queue_url           = module.elo.sqs_queue_url
   sqs_queue_arn           = module.elo.sqs_queue_arn
+  lambda_code_bucket      = var.lambda_code_bucket
 }
 
 module "elo" {
@@ -90,5 +91,4 @@ module "elo" {
   db_username        = var.db_username
   db_password        = var.db_password
   lambda_code_bucket = var.lambda_code_bucket
-  lambda_code_key    = "elo_function.zip"
 }
