@@ -4,7 +4,7 @@ FROM oven/bun:latest
 WORKDIR /app
 
 # Install app dependencies
-COPY package.json bun.lockb /app/
+COPY package.json bun.lockb prisma /app/
 RUN bun install --frozen-lockfile
 
 # Bundle app source
@@ -14,7 +14,7 @@ COPY . /app
 RUN bun run build
 
 # Expose the port the app runs on
-EXPOSE 8080
+EXPOSE 80
 
 # Run the app
 CMD ["bun", "run", "start"]

@@ -9,7 +9,12 @@ output "db_reader_endpoint" {
   value       = module.rds.reader_endpoint
 }
 
-output "github_actions_role_arn" {
-  description = "The ARN of the IAM role for GitHub Actions"
-  value       = module.gha.github_actions_role_arn
+output "backend_alb_dns_name" {
+  description = "The DNS name of the ALB for the backend"
+  value       = module.backend.alb_dns_name
+}
+
+output "lambda_function_arns" {
+  description = "ARNs of the Lambda functions"
+  value        = [module.elo.lambda_function_arn, module.match.match_function_arn]
 }

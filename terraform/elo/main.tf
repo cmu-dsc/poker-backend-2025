@@ -1,26 +1,10 @@
-data "archive_file" "elo_function" {
-  type        = "zip"
-  source_dir  = "${path.module}/../../elo-function"
-  output_path = "${path.module}/elo_function.zip"
-  excludes    = ["__pycache__", "*.pyc", "*.pyo", "*.pyd", "build", "dist"]
-}
-
-resource "aws_s3_object" "lambda_function" {
-  bucket = var.lambda_code_bucket
-  key    = var.lambda_code_key
-  source = data.archive_file.elo_function.output_path
-  etag   = filemd5(data.archive_file.elo_function.output_path)
-}
-
-# SQS Queue
 resource "aws_sqs_queue" "match_results_queue" {
   name = "match-results-queue"
   tags = var.tags
 }
 
-# Lambda Function
-resource "aws_lambda_function" "elo_update_function" {
-  function_name = "elo-update-function"
+resource "aws_lambda_function" "elo_function" {
+  function_name = "elo-function"
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"
@@ -39,11 +23,8 @@ resource "aws_lambda_function" "elo_update_function" {
   }
 
   tags = var.tags
-
-  depends_on = [aws_s3_object.lambda_function]
 }
 
-# IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
   name = "elo_lambda_role"
 
@@ -102,7 +83,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
 # Lambda Event Source Mapping
 resource "aws_lambda_event_source_mapping" "sqs_lambda_trigger" {
   event_source_arn                   = aws_sqs_queue.match_results_queue.arn
-  function_name                      = aws_lambda_function.elo_update_function.arn
+  function_name                      = aws_lambda_function.elo_function.arn
   batch_size                         = var.batch_size
   maximum_batching_window_in_seconds = var.maximum_batching_window_in_seconds
   enabled                            = true

@@ -10,5 +10,5 @@ output "sqs_queue_arn" {
 
 output "lambda_function_arn" {
   description = "The ARN of the Lambda function"
-  value       = aws_lambda_function.elo_update_function.arn
+  value       = aws_lambda_function.elo_function.arn
 }

@@ -17,13 +17,3 @@ output "poker_logs_bucket_arn" {
   description = "The ARN of the poker-logs S3 bucket"
   value       = aws_s3_bucket.poker_logs.arn
 }
-
-output "poker_lambdas_bucket_id" {
-  description = "The ID of the poker-lambdas S3 bucket"
-  value       = aws_s3_bucket.poker_lambdas.id
-}
-
-output "poker_lambdas_bucket_arn" {
-  description = "The ARN of the poker-lambdas S3 bucket"
-  value       = aws_s3_bucket.poker_lambdas.arn
-}
