@@ -17,10 +17,11 @@ jobs:
           submodules: true
           token: ${{ secrets.ENGINE_PAT }}
       
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+  
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        run: uv python install
 
       - name: Merge requirements
         run: |
@@ -29,9 +30,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r match-function/requirements.txt
-          pip freeze > match-function/requirements.txt
+          uv pip install -r match-function/requirements.txt
+          uv pip freeze > match-function/requirements.txt
 
       - name: Zip function
         run: |
