@@ -16,12 +16,16 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.ENGINE_PAT }}
+
+      - name: Update submodules
+        run: |
+          git submodule update --remote --recursive
       
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-dependency-glob: "requirements**.txt"
+          cache-dependency-glob: "match-function/**/requirements.txt"
   
       - name: Set up Python
         run: uv python install 3.12
