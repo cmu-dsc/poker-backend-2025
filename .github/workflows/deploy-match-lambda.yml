@@ -30,7 +30,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install -r match-function/requirements.txt
+          uv pip install --system -r match-function/requirements.txt
           uv pip freeze > match-function/requirements.txt
 
       - name: Zip function
