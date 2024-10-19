@@ -115,12 +115,36 @@ resource "aws_apigatewayv2_api" "stream_api" {
   name          = "match-logs-stream-api"
   protocol_type = "HTTP"
   tags          = var.tags
+
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "OPTIONS"]
+    allow_headers = ["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"]
+    max_age       = 300
+  }
 }
 
 resource "aws_apigatewayv2_stage" "stream_stage" {
   api_id      = aws_apigatewayv2_api.stream_api.id
   name        = "$default"
   auto_deploy = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_logs.arn
+    format = jsonencode({
+      requestId               = "$context.requestId"
+      sourceIp                = "$context.identity.sourceIp"
+      requestTime             = "$context.requestTime"
+      protocol                = "$context.protocol"
+      httpMethod              = "$context.httpMethod"
+      resourcePath            = "$context.resourcePath"
+      routeKey                = "$context.routeKey"
+      status                  = "$context.status"
+      responseLength          = "$context.responseLength"
+      integrationErrorMessage = "$context.integrationErrorMessage"
+      }
+    )
+  }
 
   tags = var.tags
 }
@@ -138,7 +162,20 @@ resource "aws_apigatewayv2_route" "stream_route" {
   target    = "integrations/${aws_apigatewayv2_integration.stream_integration.id}"
 }
 
-# Add SSE Lambda function
+resource "aws_apigatewayv2_route" "options_route" {
+  api_id    = aws_apigatewayv2_api.stream_api.id
+  route_key = "OPTIONS /logs"
+  target    = "integrations/${aws_apigatewayv2_integration.stream_integration.id}"
+}
+
+resource "aws_lambda_permission" "api_gateway_stream" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.stream_function.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.stream_api.execution_arn}/*/*"
+}
+
 resource "aws_lambda_function" "stream_function" {
   function_name = "match-logs-stream-function"
   role          = aws_iam_role.stream_lambda_role.arn
@@ -203,11 +240,7 @@ resource "aws_iam_role_policy" "stream_lambda_policy" {
   })
 }
 
-# Add Lambda permission for API Gateway
-resource "aws_lambda_permission" "api_gateway_stream" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.stream_function.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.stream_api.execution_arn}/*/*"
+resource "aws_cloudwatch_log_group" "api_logs" {
+  name              = "/aws/apigateway/${aws_apigatewayv2_api.stream_api.name}"
+  retention_in_days = 7
 }

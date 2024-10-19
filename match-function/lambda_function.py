@@ -1,10 +1,13 @@
+import importlib.util
 import json
 import logging
+import multiprocessing
 import os
 import resource
 import signal
 import subprocess
 import sys
+from decimal import Decimal
 from logging.handlers import RotatingFileHandler
 
 import boto3
@@ -14,7 +17,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 poker_engine_dir = os.path.join(current_dir, "poker-engine-2025")
 sys.path.append(poker_engine_dir)
 
-from run import run_api_match
+from run import run_api_bot, run_api_match
 
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
@@ -35,7 +38,9 @@ class DynamoDBHandler(logging.Handler):
     def emit(self, record):
         try:
             message = self.format(record)
-            log_table.put_item(Item={"match_id": self.match_id, "timestamp": record.created, "message": message})
+            log_table.put_item(
+                Item={"match_id": self.match_id, "timestamp": Decimal(str(record.created)), "message": message}
+            )
         except ClientError:
             self.handleError(record)
 
@@ -55,7 +60,7 @@ def setup_match_logger(match_id):
     file_handler.setFormatter(formatter)
 
     dynamodb_handler = DynamoDBHandler(match_id)
-    dynamodb_handler.setLevel(logging.INFO)
+    dynamodb_handler.setLevel(logging.DEBUG)
     dynamodb_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
@@ -81,8 +86,21 @@ def setup_player_logger(match_id, player_id):
 
 
 def set_memory_limit():
-    memory_limit = 2 * 1024 * 1024 * 1024  # 2GB in bytes
-    resource.setrlimit(resource.RLIMIT_AS, (memory_limit, memory_limit))
+    try:
+        memory_limit = 2 * 1024 * 1024 * 1024  # 2GB in bytes
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        memory_limit = min(memory_limit, hard)
+        resource.setrlimit(resource.RLIMIT_AS, (memory_limit, hard))
+    except Exception as e:
+        print(f"Warning: Unable to set memory limit. Error: {str(e)}")
+
+
+def run_agent(player_path, port, logger):
+    spec = importlib.util.spec_from_file_location("player_module", player_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    PlayerAgent = getattr(module, "PlayerAgent")
+    run_api_bot(PlayerAgent, port, logger)
 
 
 def lambda_handler(event, context):
@@ -106,38 +124,33 @@ def lambda_handler(event, context):
     player1_log_path = f"/tmp/match_{match_id}_{player1_id}.log"
     player2_log_path = f"/tmp/match_{match_id}_{player2_id}.log"
 
-    player1_path = "/tmp/player1.py"
-    player2_path = "/tmp/player2.py"
+    player1_path = "./player1.py"
+    player2_path = "./player2.py"
 
     try:
-        s3.download_file(AGENT_BUCKET, player1_key, player1_path)
-        s3.download_file(AGENT_BUCKET, player2_key, player2_path)
+        # s3.download_file(AGENT_BUCKET, player1_key, player1_path)
+        # s3.download_file(AGENT_BUCKET, player2_key, player2_path)
 
         match_logger.info("Starting agents")
         processes = []
-        for i, (player_file, player_logger) in enumerate([("player1", player1_logger), ("player2", player2_logger)]):
-            process = subprocess.Popen(
-                [
-                    sys.executable,
-                    "-c",
-                    f"from run import run_api_bot; from {player_file} import PlayerAgent; run_api_bot(PlayerAgent, {8000 + i}, logger=player_logger)",
-                ],
-                preexec_fn=lambda: (os.setsid(), set_memory_limit()),
+        for i, (player_path, player_logger) in enumerate(
+            [(player1_path, player1_logger), (player2_path, player2_logger)]
+        ):
+            process = multiprocessing.Process(
+                target=run_agent,
+                args=(player_path, 8000 + i, player_logger)
             )
+            process.start()
             processes.append(process)
+
+        set_memory_limit()
 
         match_logger.info("Starting match")
         result = run_api_match("http://127.0.0.1:8000", "http://127.0.0.1:8001", logger=match_logger)
 
         match_logger.info("Terminating agents")
         for process in processes:
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-
-        for process in processes:
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            process.terminate()
 
         # Upload log files to S3
         match_log_key = f"match_logs/match_{match_id}.log"

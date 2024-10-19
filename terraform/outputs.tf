@@ -16,5 +16,10 @@ output "backend_alb_dns_name" {
 
 output "lambda_function_arns" {
   description = "ARNs of the Lambda functions"
-  value        = [module.elo.lambda_function_arn, module.match.match_function_arn]
+  value       = [module.elo.lambda_function_arn, module.match.match_function_arn]
+}
+
+output "stream_api_endpoint" {
+  description = "The endpoint URL for the Stream API"
+  value       = module.match.stream_api_endpoint
 }

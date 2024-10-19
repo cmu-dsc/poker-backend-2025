@@ -3,8 +3,8 @@ output "match_function_arn" {
   value       = aws_lambda_function.match_function.arn
 }
 
-output "sse_api_endpoint" {
-  description = "The endpoint URL for the SSE API"
+output "stream_api_endpoint" {
+  description = "The endpoint URL for the Stream API"
   value       = aws_apigatewayv2_stage.stream_stage.invoke_url
 }
 

@@ -1,5 +1,6 @@
 import json
 import os
+from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -10,7 +11,7 @@ log_table = dynamodb.Table(os.environ["LOG_TABLE_NAME"])
 
 def lambda_handler(event, context):
     match_id = event["queryStringParameters"]["match_id"]
-    last_timestamp = float(event["queryStringParameters"].get("last_timestamp", 0))
+    last_timestamp = Decimal(event["queryStringParameters"].get("last_timestamp", "0"))
 
     logs = get_logs(match_id, last_timestamp)
 
@@ -29,4 +30,10 @@ def get_logs(match_id, last_timestamp):
 
 
 def format_sse(logs):
-    return "".join([f"data: {json.dumps(log)}\n\n" for log in logs])
+    return "".join([f"data: {json.dumps(log, default=decimal_default)}\n\n" for log in logs])
+
+
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
