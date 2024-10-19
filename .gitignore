@@ -53,3 +53,5 @@ __fixtures__/custom-modules-dir/patches/
 .env
 
 *.csv
+
+.DS_Store

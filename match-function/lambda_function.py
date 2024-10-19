@@ -1,13 +1,14 @@
 import json
+import logging
 import os
 import resource
 import signal
 import subprocess
 import sys
-import logging
 from logging.handlers import RotatingFileHandler
 
 import boto3
+from botocore.exceptions import ClientError
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 poker_engine_dir = os.path.join(current_dir, "poker-engine-2025")
@@ -22,39 +23,62 @@ AGENT_BUCKET = os.environ["POKER_AGENTS_BUCKET"]
 LOG_BUCKET = os.environ["POKER_LOGS_BUCKET"]
 SQS_QUEUE_URL = os.environ["SQS_QUEUE_URL"]
 
-# Add logger configuration
+dynamodb = boto3.resource("dynamodb")
+log_table = dynamodb.Table(os.environ["LOG_TABLE_NAME"])
+
+
+class DynamoDBHandler(logging.Handler):
+    def __init__(self, match_id):
+        super().__init__()
+        self.match_id = match_id
+
+    def emit(self, record):
+        try:
+            message = self.format(record)
+            log_table.put_item(Item={"match_id": self.match_id, "timestamp": record.created, "message": message})
+        except ClientError:
+            self.handleError(record)
+
+
 def setup_match_logger(match_id):
-    logger = logging.getLogger(f'match_{match_id}')
+    logger = logging.getLogger(f"match_{match_id}")
     logger.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
-    file_handler = RotatingFileHandler(f'/tmp/match_{match_id}.log', maxBytes=1024*1024, backupCount=5)
+    file_handler = RotatingFileHandler(f"/tmp/match_{match_id}.log", maxBytes=1024 * 1024, backupCount=5)
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
 
+    dynamodb_handler = DynamoDBHandler(match_id)
+    dynamodb_handler.setLevel(logging.INFO)
+    dynamodb_handler.setFormatter(formatter)
+
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
+    logger.addHandler(dynamodb_handler)
 
     return logger
 
+
 def setup_player_logger(match_id, player_id):
-    logger = logging.getLogger(f'player_{player_id}')
+    logger = logging.getLogger(f"player_{player_id}")
     logger.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    file_handler = RotatingFileHandler(f'/tmp/match_{match_id}_{player_id}.log', maxBytes=1024*1024, backupCount=5)
+    file_handler = RotatingFileHandler(f"/tmp/match_{match_id}_{player_id}.log", maxBytes=1024 * 1024, backupCount=5)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)
 
     return logger
+
 
 def set_memory_limit():
     memory_limit = 2 * 1024 * 1024 * 1024  # 2GB in bytes
@@ -69,15 +93,18 @@ def lambda_handler(event, context):
     match_id = event.get("match_id")
 
     if not all([player1_key, player2_key, player1_id, player2_id, match_id]):
-        return {"statusCode": 400, "body": json.dumps("Error: s3 keys, player IDs, and match_id must be provided in the event.")}
+        return {
+            "statusCode": 400,
+            "body": json.dumps("Error: s3 keys, player IDs, and match_id must be provided in the event."),
+        }
 
     match_logger = setup_match_logger(match_id)
     player1_logger = setup_player_logger(match_id, player1_id)
     player2_logger = setup_player_logger(match_id, player2_id)
 
-    match_log_path = f'/tmp/match_{match_id}.log'
-    player1_log_path = f'/tmp/match_{match_id}_{player1_id}.log'
-    player2_log_path = f'/tmp/match_{match_id}_{player2_id}.log'
+    match_log_path = f"/tmp/match_{match_id}.log"
+    player1_log_path = f"/tmp/match_{match_id}_{player1_id}.log"
+    player2_log_path = f"/tmp/match_{match_id}_{player2_id}.log"
 
     player1_path = "/tmp/player1.py"
     player2_path = "/tmp/player2.py"
@@ -88,10 +115,7 @@ def lambda_handler(event, context):
 
         match_logger.info("Starting agents")
         processes = []
-        for i, (player_file, player_logger) in enumerate([
-            ("player1", player1_logger),
-            ("player2", player2_logger)
-        ]):
+        for i, (player_file, player_logger) in enumerate([("player1", player1_logger), ("player2", player2_logger)]):
             process = subprocess.Popen(
                 [
                     sys.executable,
@@ -128,16 +152,13 @@ def lambda_handler(event, context):
             "result": result["outcome"],
             "player1_id": player1_id,
             "player2_id": player2_id,
-            "match_id": match_id
+            "match_id": match_id,
         }
         sqs.send_message(QueueUrl=SQS_QUEUE_URL, MessageBody=json.dumps(message))
 
         return {
             "statusCode": 200,
-            "body": json.dumps({
-                "message": "Match completed successfully",
-                "result": result
-            }),
+            "body": json.dumps({"message": "Match completed successfully", "result": result}),
         }
     except Exception as e:
         match_logger.exception(f"An error occurred: {str(e)}")
@@ -150,6 +171,6 @@ if __name__ == "__main__":
         "player2_key": "test_player2.py",
         "player1_id": "test_player1",
         "player2_id": "test_player2",
-        "match_id": "test_match_001"
+        "match_id": "test_match_001",
     }
     print(lambda_handler(test_event, None))

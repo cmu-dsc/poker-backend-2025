@@ -43,3 +43,9 @@ variable "sqs_queue_arn" {
   description = "The ARN of the SQS queue"
   type        = string
 }
+
+variable "stream_lambda_code_key" {
+  description = "The S3 key of the Stream Lambda function code"
+  type        = string
+  default     = "stream_function.zip"
+}
