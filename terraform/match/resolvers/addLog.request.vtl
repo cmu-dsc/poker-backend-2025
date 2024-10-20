@@ -1,0 +1,12 @@
+{
+  "version": "2018-05-29",
+  "operation": "PutItem",
+  "key": {
+    "match_id": $util.dynamodb.toDynamoDBJson($ctx.args.match_id),
+    "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp)
+  },
+  "attributeValues": {
+    "message": $util.dynamodb.toDynamoDBJson($ctx.args.message),
+    "level": $util.dynamodb.toDynamoDBJson($ctx.args.level)
+  }
+}

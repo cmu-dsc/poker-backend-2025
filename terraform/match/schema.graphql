@@ -1,0 +1,25 @@
+type Log {
+  match_id: ID!
+  message: String!
+  timestamp: AWSTimestamp!
+  level: String!
+}
+
+type Query {
+  getLogs(match_id: ID!, last_timestamp: AWSTimestamp = 0): [Log]
+}
+
+type Mutation {
+  addLog(match_id: ID!, timestamp: AWSTimestamp!, message: String!, level: String!): Log
+}
+
+type Subscription {
+  onNewLog(match_id: ID!): Log
+    @aws_subscribe(mutations: ["addLog"])
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
