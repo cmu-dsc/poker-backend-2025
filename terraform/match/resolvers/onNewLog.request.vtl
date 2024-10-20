@@ -1,0 +1,13 @@
+{
+    "version": "2018-05-29",
+    "operation": "Query",
+    "query": {
+        "expression": "match_id = :match_id",
+        "expressionValues": {
+            ":match_id": $util.dynamodb.toDynamoDBJson($ctx.args.match_id)
+        }
+    },
+    "scanIndexForward": false,
+    "limit": 1,
+    "projectionExpression": "message"
+}

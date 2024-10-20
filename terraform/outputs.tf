@@ -19,7 +19,13 @@ output "lambda_function_arns" {
   value       = [module.elo.lambda_function_arn, module.match.match_function_arn]
 }
 
-output "stream_api_endpoint" {
-  description = "The endpoint URL for the Stream API"
-  value       = module.match.stream_api_endpoint
+output "appsync_api_url" {
+  description = "The URL of the AppSync GraphQL API"
+  value       = module.match.appsync_api_url
+}
+
+output "appsync_api_key" {
+  description = "The API key for the AppSync GraphQL API"
+  value       = module.match.appsync_api_key
+  sensitive   = true
 }
