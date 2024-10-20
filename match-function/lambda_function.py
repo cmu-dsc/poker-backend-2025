@@ -135,12 +135,12 @@ def lambda_handler(event, context):
     player1_log_path = f"/tmp/match_{match_id}_{player1_id}.log"
     player2_log_path = f"/tmp/match_{match_id}_{player2_id}.log"
 
-    player1_dir = "/tmp/player1"
-    player2_dir = "/tmp/player2"
+    player1_dir = "./player1"
+    player2_dir = "./player2"
 
     try:
-        download_and_extract_agent(player1_key, player1_dir)
-        download_and_extract_agent(player2_key, player2_dir)
+        # download_and_extract_agent(player1_key, player1_dir)
+        # download_and_extract_agent(player2_key, player2_dir)
 
         match_logger.info("Starting agents")
         processes = []

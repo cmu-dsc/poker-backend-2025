@@ -1,9 +1,12 @@
 type Log {
+  match_id: ID!
   message: String!
+  timestamp: AWSTimestamp!
+  level: String!
 }
 
 type Query {
-  getLogs(match_id: ID!, last_timestamp: AWSTimestamp): [Log]
+  getLogs(match_id: ID!, last_timestamp: AWSTimestamp = 0): [Log]
 }
 
 type Mutation {
