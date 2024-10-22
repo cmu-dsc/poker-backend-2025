@@ -1,3 +1,4 @@
+import asyncio
 import importlib.util
 import json
 import logging
@@ -5,11 +6,12 @@ import multiprocessing
 import os
 import sys
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
 
+import aiohttp
 import boto3
-import requests
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 poker_engine_dir = os.path.join(current_dir, "poker-engine-2025")
@@ -27,7 +29,7 @@ APPSYNC_API_ENDPOINT = os.environ["APPSYNC_API_ENDPOINT"]
 APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
 
 
-def call_appsync_mutation(match_id, timestamp, message, level):
+async def call_appsync_mutation(match_id, timestamp, message, level):
     mutation = """
     mutation AddLog($match_id: ID!, $timestamp: AWSTimestamp!, $message: String!, $level: String!) {
         addLog(match_id: $match_id, timestamp: $timestamp, message: $message, level: $level) {
@@ -41,24 +43,55 @@ def call_appsync_mutation(match_id, timestamp, message, level):
     variables = {"match_id": match_id, "timestamp": int(timestamp), "message": message, "level": level}
     payload = {"query": mutation, "variables": variables}
     headers = {"Content-Type": "application/json", "x-api-key": APPSYNC_API_KEY}
-    response = requests.post(APPSYNC_API_ENDPOINT, json=payload, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"GraphQL mutation failed: {response.text}")
-    return response.json()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(APPSYNC_API_ENDPOINT, json=payload, headers=headers) as response:
+            if response.status != 200:
+                raise Exception(f"GraphQL mutation failed: {await response.text()}")
+            return await response.json()
 
 
 class AppSyncHandler(logging.Handler):
     def __init__(self, match_id):
         super().__init__()
         self.match_id = match_id
+        self.queue = asyncio.Queue()
+        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.running = True
+        self.background_task = self.executor.submit(self.background_worker)
 
     def emit(self, record):
         try:
             message = self.format(record)
             timestamp = Decimal(str(record.created))
-            call_appsync_mutation(self.match_id, timestamp, message, record.levelname)
+            self.queue.put_nowait((self.match_id, timestamp, message, record.levelname))
         except Exception:
             self.handleError(record)
+
+    def background_worker(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        async def process_queue():
+            while self.running or not self.queue.empty():
+                try:
+                    match_id, timestamp, message, level = await asyncio.wait_for(self.queue.get(), timeout=1.0)
+                    try:
+                        await call_appsync_mutation(match_id, timestamp, message, level)
+                    except Exception:
+                        self.handleError(None)
+                    finally:
+                        self.queue.task_done()
+                except asyncio.TimeoutError:
+                    continue
+
+        loop.run_until_complete(process_queue())
+
+    def close(self):
+        self.running = False
+        self.background_task.result()
+        self.executor.shutdown(wait=True)
+        super().close()
 
 
 def setup_match_logger(match_id):
@@ -82,7 +115,7 @@ def setup_match_logger(match_id):
     logger.addHandler(file_handler)
     logger.addHandler(appsync_handler)
 
-    return logger
+    return logger, appsync_handler
 
 
 def setup_player_logger(match_id, player_id):
@@ -135,7 +168,7 @@ def send_result_to_sqs(result, player1_id, player2_id, match_id):
 
 
 def run_match(player1_key, player2_key, player1_id, player2_id, match_id):
-    match_logger = setup_match_logger(match_id)
+    match_logger, appsync_handler = setup_match_logger(match_id)
     player1_logger = setup_player_logger(match_id, player1_id)
     player2_logger = setup_player_logger(match_id, player2_id)
 
@@ -166,6 +199,9 @@ def run_match(player1_key, player2_key, player1_id, player2_id, match_id):
     except Exception as e:
         match_logger.exception(f"An error occurred: {str(e)}")
         return {"error": f"An error occurred: {str(e)}"}
+    finally:
+        if appsync_handler:
+            appsync_handler.close()
 
 
 if __name__ == "__main__":
