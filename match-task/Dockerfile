@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.13-alpine
+FROM --platform=$TARGETPLATFORM ghcr.io/astral-sh/uv:python3.13-alpine
 
 WORKDIR /app
 

@@ -12,6 +12,11 @@ resource "aws_ecs_task_definition" "match_task" {
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
+
   container_definitions = jsonencode([
     {
       name  = "match-container"
@@ -56,4 +61,16 @@ resource "aws_cloudwatch_log_group" "match_logs" {
   name              = "/ecs/match-task"
   retention_in_days = 30
   tags              = var.tags
+}
+
+resource "aws_ecs_cluster_capacity_providers" "match_cluster_capacity_providers" {
+  cluster_name = aws_ecs_cluster.match_cluster.name
+
+  capacity_providers = ["FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = "FARGATE_SPOT"
+  }
 }
