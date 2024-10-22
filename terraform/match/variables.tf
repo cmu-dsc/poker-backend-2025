@@ -9,17 +9,6 @@ variable "tags" {
   type        = map(string)
 }
 
-variable "lambda_code_bucket" {
-  description = "The name of the S3 bucket containing Lambda code"
-  type        = string
-}
-
-variable "lambda_code_key" {
-  description = "The S3 key of the Lambda function code"
-  type        = string
-  default     = "match_function.zip"
-}
-
 variable "poker_agents_bucket_id" {
   description = "The ID of the poker-agents S3 bucket"
   type        = string

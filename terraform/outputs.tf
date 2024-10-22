@@ -16,16 +16,10 @@ output "backend_alb_dns_name" {
 
 output "lambda_function_arns" {
   description = "ARNs of the Lambda functions"
-  value       = [module.elo.lambda_function_arn, module.match.match_function_arn]
+  value       = [module.elo.lambda_function_arn]
 }
 
 output "appsync_api_url" {
   description = "The URL of the AppSync GraphQL API"
   value       = module.match.appsync_api_url
-}
-
-output "appsync_api_key" {
-  description = "The API key for the AppSync GraphQL API"
-  value       = module.match.appsync_api_key
-  sensitive   = true
 }
