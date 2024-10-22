@@ -1,4 +1,4 @@
-name: Deploy Match Lambda
+name: Build and Push Match Task Container
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     types: [rebuild-engine]
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -20,32 +20,6 @@ jobs:
       - name: Update submodules
         run: |
           git submodule update --remote --recursive
-      
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-          cache-dependency-glob: "match-function/**/requirements.txt"
-  
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Merge requirements
-        run: |
-          cat match-function/requirements.txt match-function/poker-engine-2025/requirements.txt | sort -u > combined_requirements.txt
-          mv combined_requirements.txt match-function/requirements.txt
-
-      - name: Install dependencies
-        run: |
-          uv venv -p 3.12
-          source .venv/bin/activate
-          uv pip install -r match-function/requirements.txt
-          uv pip freeze > match-function/requirements.txt
-
-      - name: Zip function
-        run: |
-          cd match-function
-          zip -r ../match_function.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -53,7 +27,16 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Upload to S3 and update Lambda
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: poker-ecr
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          aws s3 cp match_function.zip s3://cmu-poker-lambdas/match_function.zip
-          aws lambda update-function-code --function-name match-function --s3-bucket cmu-poker-lambdas --s3-key match_function.zip
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./match-task
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
