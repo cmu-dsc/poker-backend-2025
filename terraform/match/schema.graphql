@@ -7,15 +7,18 @@ type Log {
 
 type Query {
   getLogs(match_id: ID!, last_timestamp: AWSTimestamp = 0): [Log]
+    @aws_cognito_user_pools
 }
 
 type Mutation {
   addLog(match_id: ID!, timestamp: AWSTimestamp!, message: String!, level: String!): Log
+    @aws_iam
 }
 
 type Subscription {
   onNewLog(match_id: ID!): Log
     @aws_subscribe(mutations: ["addLog"])
+    @aws_cognito_user_pools
 }
 
 schema {

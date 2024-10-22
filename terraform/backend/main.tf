@@ -28,7 +28,9 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "DB_READER_ENDPOINT", value = var.db_reader_endpoint },
         { name = "DB_NAME", value = var.db_name },
         { name = "DB_USERNAME", value = var.db_username },
-        { name = "DB_PASSWORD", value = var.db_password }
+        { name = "DB_PASSWORD", value = var.db_password },
+        { name = "COGNITO_USER_POOL_ID", value = aws_cognito_user_pool.main.id },
+        { name = "COGNITO_APP_CLIENT_ID", value = aws_cognito_user_pool_client.main.id },
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -162,4 +164,102 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 
   tags = var.tags
+}
+
+resource "aws_cognito_user_pool" "main" {
+  name = "backend-user-pool"
+
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = true
+    require_uppercase = true
+  }
+
+  auto_verified_attributes = ["email"]
+
+  schema {
+    attribute_data_type = "String"
+    name                = "email"
+    required            = true
+    mutable             = true
+  }
+
+  lambda_config {
+    pre_sign_up = aws_lambda_function.pre_sign_up.arn
+  }
+
+  tags = var.tags
+}
+
+resource "aws_cognito_user_pool_client" "main" {
+  name         = "backend-app-client"
+  user_pool_id = aws_cognito_user_pool.main.id
+
+  generate_secret     = false
+  explicit_auth_flows = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+
+  supported_identity_providers = ["COGNITO", "Google"]
+}
+
+resource "aws_cognito_identity_provider" "google_provider" {
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Google"
+  provider_type = "Google"
+
+  provider_details = {
+    authorize_scopes = "email profile openid"
+    client_id        = var.google_client_id
+    client_secret    = var.google_client_secret
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    username = "sub"
+  }
+}
+
+resource "aws_lambda_function" "pre_sign_up" {
+  filename      = "${path.module}/signup-function.zip"
+  function_name = "cognito_pre_sign_up"
+  role          = aws_iam_role.pre_sign_up_lambda_role.arn
+  handler       = "index.handler"
+  runtime       = "nodejs14.x"
+
+  source_code_hash = filebase64sha256("${path.module}/signup-function.zip")
+
+  tags = var.tags
+}
+
+resource "aws_iam_role" "pre_sign_up_lambda_role" {
+  name = "cognito_pre_sign_up_lambda_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "pre_sign_up_lambda_basic_execution" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = aws_iam_role.pre_sign_up_lambda_role.name
+}
+
+resource "aws_lambda_permission" "allow_cognito" {
+  statement_id  = "AllowCognitoInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.pre_sign_up.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = aws_cognito_user_pool.main.arn
 }

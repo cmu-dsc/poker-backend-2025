@@ -71,9 +71,13 @@ resource "aws_iam_role_policy" "match_lambda_policy" {
         Resource = "arn:aws:logs:*:*:*"
       },
       {
-        Effect   = "Allow"
-        Action   = ["appsync:GraphQL"]
-        Resource = [aws_appsync_graphql_api.match_logs_api.arn]
+        Effect = "Allow"
+        Action = [
+          "appsync:GraphQL"
+        ]
+        Resource = [
+          "${aws_appsync_graphql_api.match_logs_api.arn}/types/Mutation/fields/addLog"
+        ]
       }
     ]
   })
@@ -99,9 +103,20 @@ resource "aws_dynamodb_table" "match_logs" {
 }
 
 resource "aws_appsync_graphql_api" "match_logs_api" {
-  name                = "match-logs-api"
-  authentication_type = "API_KEY"
-  schema              = file("${path.module}/schema.graphql")
+  name   = "match-logs-api"
+  schema = file("${path.module}/schema.graphql")
+
+  authentication_type = "AMAZON_COGNITO_USER_POOLS"
+
+  user_pool_config {
+    aws_region     = var.aws_region
+    default_action = "ALLOW"
+    user_pool_id   = var.cognito_user_pool_id
+  }
+
+  additional_authentication_provider {
+    authentication_type = "AWS_IAM"
+  }
 
   log_config {
     cloudwatch_logs_role_arn = aws_iam_role.appsync_logs_role.arn
