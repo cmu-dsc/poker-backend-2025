@@ -39,6 +39,13 @@ resource "aws_security_group" "pokerbots_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port = 6379
+    to_port   = 6379
+    protocol  = "tcp"
+    self      = true
+  }
+
   tags = var.tags
 }
 
@@ -77,6 +84,9 @@ module "match" {
   source                  = "./match"
   tags                    = var.tags
   aws_region              = var.aws_region
+  vpc_id                  = data.aws_vpc.default.id
+  subnet_ids              = data.aws_subnets.default.ids
+  security_group_id       = aws_security_group.pokerbots_sg.id
   poker_agents_bucket_id  = module.s3.poker_agents_bucket_id
   poker_agents_bucket_arn = module.s3.poker_agents_bucket_arn
   poker_logs_bucket_id    = module.s3.poker_logs_bucket_id

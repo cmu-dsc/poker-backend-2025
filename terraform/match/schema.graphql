@@ -3,6 +3,7 @@ type Log {
   message: String!
   timestamp: AWSTimestamp!
   level: String!
+  expiration: AWSTimestamp!
 }
 
 type Query {
@@ -11,7 +12,13 @@ type Query {
 }
 
 type Mutation {
-  addLog(match_id: ID!, timestamp: AWSTimestamp!, message: String!, level: String!): Log
+  addLog(
+    match_id: ID!
+    timestamp: AWSTimestamp!
+    message: String!
+    level: String!
+    expiration: AWSTimestamp!
+  ): Log
     @aws_iam
 }
 

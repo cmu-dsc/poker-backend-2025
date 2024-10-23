@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import sys
 import zipfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
@@ -31,16 +32,18 @@ APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
 
 async def call_appsync_mutation(match_id, timestamp, message, level):
     mutation = """
-    mutation AddLog($match_id: ID!, $timestamp: AWSTimestamp!, $message: String!, $level: String!) {
-        addLog(match_id: $match_id, timestamp: $timestamp, message: $message, level: $level) {
+    mutation AddLog($match_id: ID!, $timestamp: AWSTimestamp!, $message: String!, $level: String!, $expiration: AWSTimestamp!) {
+        addLog(match_id: $match_id, timestamp: $timestamp, message: $message, level: $level, expiration: $expiration) {
             match_id
             timestamp
             message
             level
+            expiration
         }
     }
     """
-    variables = {"match_id": match_id, "timestamp": int(timestamp), "message": message, "level": level}
+    expiration = int(time.time()) + (30 * 60)  # 30 minutes
+    variables = {"match_id": match_id, "timestamp": int(timestamp), "message": message, "level": level, "expiration": expiration}
     payload = {"query": mutation, "variables": variables}
     headers = {"Content-Type": "application/json", "x-api-key": APPSYNC_API_KEY}
 
