@@ -12,6 +12,12 @@ enum PermissionLevel {
   USER
 }
 
+enum MatchStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 model UserDao {
   id              Int             @id @unique @default(autoincrement())
   email           String          @unique
@@ -52,7 +58,7 @@ model MatchDao {
   matchId        Int              @id @unique @default(autoincrement())
   timestamp      DateTime         @default(now())
   teamMatches    TeamMatchDao[]
-  isCompleted    Boolean          @default(false)
+  matchStatus    MatchStatus      @default(NOT_STARTED)
   matchRequest   MatchRequestDao? @relation(fields: [matchRequestId], references: [id])
   matchRequestId Int?             @unique
 }
@@ -86,5 +92,5 @@ model BotDao {
   storageLocation String
   teamMatches     TeamMatchDao[]
   activeTeam      TeamDao?       @relation("ActiveBot")
-  activeTeamId    Int?           @unique 
+  activeTeamId    Int?           @unique
 }
