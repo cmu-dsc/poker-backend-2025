@@ -34,3 +34,9 @@ variable "ecr_repository_url" {
   description = "The URL of the ECR repository"
   type        = string
 }
+
+variable "github_access_token" {
+  description = "GitHub personal access token for Amplify"
+  type        = string
+  sensitive   = true
+}
