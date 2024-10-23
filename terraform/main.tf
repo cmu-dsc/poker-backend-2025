@@ -97,3 +97,13 @@ module "elo" {
   db_password        = var.db_password
   lambda_code_bucket = var.lambda_code_bucket
 }
+
+module "frontend" {
+  source                = "./frontend"
+  tags                  = var.tags
+  github_repository     = "https://github.com/cmu-dsc/poker-frontend-2025"
+  github_branch         = "main"
+  github_access_token   = var.github_access_token
+  aws_region            = var.aws_region
+  api_endpoint          = "http://${module.backend.alb_dns_name}"
+}
