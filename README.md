@@ -15,7 +15,7 @@ bun install
 Run the server in dev mode:
 
 ```bash
-bun dev
+bun run dev
 ```
 
 The server will be running on `http://localhost:<PORT FROM ENV>`.
@@ -25,7 +25,7 @@ API specification can be found at `http://localhost:<PORT FROM ENV>/api-spec`.
 To build the server:
 
 ```bash
-bun build
+bun run build
 ```
 
 ### Project Structure
