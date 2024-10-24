@@ -1,8 +1,12 @@
 {
-  "version": "2018-05-29",
-  "operation": "Invoke",
-  "payload": {
-    "operation": "addLog",
-    "arguments": $util.toJson($ctx.args)
-  }
+    "version": "2018-05-29",
+    "operation": "Invoke",
+    "payload": {
+        "match_id": $util.toJson($ctx.args.match_id),
+        "message": $util.toJson($ctx.args.message),
+        "timestamp": $util.toJson($ctx.args.timestamp),
+        "level": $util.toJson($ctx.args.level),
+        "expiration": $util.toJson($ctx.args.expiration),
+        "operation": "addLog"
+    }
 }

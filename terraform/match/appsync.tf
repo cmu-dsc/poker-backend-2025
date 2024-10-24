@@ -14,6 +14,10 @@ resource "aws_appsync_graphql_api" "match_logs_api" {
     authentication_type = "AWS_IAM"
   }
 
+  additional_authentication_provider {
+    authentication_type = "API_KEY"
+  }
+
   log_config {
     cloudwatch_logs_role_arn = aws_iam_role.appsync_logs_role.arn
     field_log_level          = "ALL"
@@ -49,16 +53,21 @@ resource "aws_appsync_resolver" "get_logs_resolver" {
   response_template = file("${path.module}/resolvers/getLogs.response.vtl")
 }
 
+resource "aws_appsync_datasource" "none" {
+  api_id = aws_appsync_graphql_api.match_logs_api.id
+  name   = "NONE"
+  type   = "NONE"
+}
+
 resource "aws_appsync_resolver" "on_new_log_resolver" {
   api_id      = aws_appsync_graphql_api.match_logs_api.id
   type        = "Subscription"
   field       = "onNewLog"
-  data_source = aws_appsync_datasource.valkey_lambda.name
+  data_source = aws_appsync_datasource.none.name
 
   request_template  = file("${path.module}/resolvers/onNewLog.request.vtl")
   response_template = file("${path.module}/resolvers/onNewLog.response.vtl")
 }
-
 resource "aws_appsync_resolver" "add_log_resolver" {
   api_id      = aws_appsync_graphql_api.match_logs_api.id
   type        = "Mutation"

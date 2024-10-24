@@ -46,6 +46,13 @@ resource "aws_security_group" "pokerbots_sg" {
     self      = true
   }
 
+  ingress {
+    from_port = 6380
+    to_port   = 6380
+    protocol  = "tcp"
+    self      = true
+  }
+
   tags = var.tags
 }
 

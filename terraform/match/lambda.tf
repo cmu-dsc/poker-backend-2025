@@ -25,21 +25,21 @@ data "archive_file" "valkey_handler" {
   type        = "zip"
   source_dir  = "${path.module}/../../valkey-handler"
   output_path = "${path.module}/valkey-handler.zip"
+
+  depends_on = [
+    null_resource.npm_install
+  ]
 }
 
-resource "aws_security_group" "lambda" {
-  name        = "valkey-handler-lambda"
-  description = "Security group for Valkey handler Lambda function"
-  vpc_id      = var.vpc_id
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+resource "null_resource" "npm_install" {
+  triggers = {
+    package_json = filemd5("${path.module}/../../valkey-handler/package.json")
+    index_mjs    = filemd5("${path.module}/../../valkey-handler/index.mjs")
   }
 
-  tags = var.tags
+  provisioner "local-exec" {
+    command = "cd ${path.module}/../../valkey-handler && npm install"
+  }
 }
 
 resource "aws_iam_role" "lambda_role" {

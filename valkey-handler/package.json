@@ -2,8 +2,8 @@
   "name": "valkey-handler",
   "version": "1.0.0",
   "description": "Lambda function for handling Valkey operations",
-  "main": "index.js",
+  "main": "index.mjs",
   "dependencies": {
-    "iovalkey": "^0.1.0"
+    "ioredis": "^5.4.1"
   }
 }
