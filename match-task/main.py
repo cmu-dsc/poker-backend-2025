@@ -59,7 +59,7 @@ class AppSyncHandler(logging.Handler):
         super().__init__()
         self.match_id = match_id
         self.queue = asyncio.Queue()
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.executor = ThreadPoolExecutor(max_workers=10)
         self.running = True
         self.background_task = self.executor.submit(self.background_worker)
 
@@ -78,14 +78,21 @@ class AppSyncHandler(logging.Handler):
         async def process_queue():
             while self.running or not self.queue.empty():
                 try:
-                    match_id, timestamp, message, level = await asyncio.wait_for(self.queue.get(), timeout=1.0)
-                    try:
-                        await call_appsync_mutation(match_id, timestamp, message, level)
-                    except Exception:
-                        self.handleError(None)
-                    finally:
-                        self.queue.task_done()
-                except asyncio.TimeoutError:
+                    messages = []
+                    for _ in range(10):
+                        try:
+                            msg = await asyncio.wait_for(self.queue.get(), timeout=0.1)
+                            messages.append(msg)
+                        except asyncio.TimeoutError:
+                            break
+
+                    if messages:
+                        tasks = [call_appsync_mutation(match_id, timestamp, message, level) for match_id, timestamp, message, level in messages]
+                        await asyncio.gather(*tasks)
+                        for _ in messages:
+                            self.queue.task_done()
+                except Exception:
+                    self.handleError(None)
                     continue
 
         loop.run_until_complete(process_queue())
@@ -111,7 +118,7 @@ def setup_match_logger(match_id):
     file_handler.setFormatter(formatter)
 
     appsync_handler = AppSyncHandler(match_id)
-    appsync_handler.setLevel(logging.DEBUG)
+    appsync_handler.setLevel(logging.INFO)
     appsync_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
