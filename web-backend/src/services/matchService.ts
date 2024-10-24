@@ -5,25 +5,27 @@ import {
   getBotLogPathTeam,
   getEngineLogPath,
 } from 'src/config/bucket'
-import { MatchDao } from '@prisma/client'
-import { dbClient, storageClient } from 'src/server'
-import { GetSignedUrlConfig } from '@google-cloud/storage'
-import { convertMatchDaoWithTeamMatchDaosToDto } from './converters/matchConverterService'
+import { MatchDao, TeamMatchDao } from '@prisma/client'
+import { dbClient } from 'src/server'
+import { convertMatchDaoWithTeamMatchesToDto } from './converters/matchConverterService'
 
 /**
  * Retrieve a match from the database by matchId
  * @param {string} matchId the id of the match
  * @returns {Promise<MatchDao>} the corresponding match
  */
-export const getMatchById = async (matchId: string): Promise<MatchDao> => {
-  const match: MatchDao | null = await dbClient.matchDao.findUnique({
-    where: {
-      matchId,
-    },
-    include: {
-      teamMatchDaos: true,
-    },
-  })
+export const getMatchById = async (
+  matchId: number,
+): Promise<MatchDao & { teamMatches: TeamMatchDao[] }> => {
+  const match: (MatchDao & { teamMatches: TeamMatchDao[] }) | null =
+    await dbClient.matchDao.findUnique({
+      where: {
+        matchId,
+      },
+      include: {
+        teamMatches: true,
+      },
+    })
 
   if (!match) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Match not found')
@@ -34,40 +36,45 @@ export const getMatchById = async (matchId: string): Promise<MatchDao> => {
 
 /**
  * Retrieve all matches from the database by TeamId
- * @param {string} teamId the id of the team
+ * @param {number} teamId the id of the team
  * @returns {Promise<MatchDto[]>} all matches
  */
 export const getMatchesByTeamId = async (
-  githubUsername: string,
+  teamId: number,
 ): Promise<MatchDto[]> => {
-  const matches: MatchDao[] = await dbClient.matchDao.findMany({
+  const matches = await dbClient.matchDao.findMany({
     where: {
-      teamMatchDaos: {
+      teamMatches: {
         some: {
-          teamId: githubUsername,
+          teamId,
         },
       },
     },
     include: {
-      teamMatchDaos: true,
+      teamMatches: {
+        include: {
+          team: true,
+          bot: true,
+        },
+      },
     },
   })
 
-  return matches.map(convertMatchDaoWithTeamMatchDaosToDto)
+  return matches.map(convertMatchDaoWithTeamMatchesToDto)
 }
 
 /**
  * Get the engine logs download link for a match by the match id
- * @param {string} matchId the id of the match
+ * @param {number} matchId the id of the match
  * @returns {Promise<string>} the engine logs
  */
 export const getEngineLogDownloadLinkCSV = async (
-  matchId: string,
+  matchId: number,
 ): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getEngineLogPath(match, 'csv'))
+    return await getEngineLogPath(match, 'csv')
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }
@@ -75,16 +82,16 @@ export const getEngineLogDownloadLinkCSV = async (
 
 /**
  * Get the engine logs download link for a match by the match id
- * @param {string} matchId the id of the match
+ * @param {number} matchId the id of the match
  * @returns {Promise<string>} the engine logs
  */
 export const getEngineLogDownloadLinkTXT = async (
-  matchId: string,
+  matchId: number,
 ): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(getEngineLogPath(match, 'txt'))
+    return await getEngineLogPath(match, 'txt') // TODO: get S3 key
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Engine log not found')
   }
@@ -97,36 +104,14 @@ export const getEngineLogDownloadLinkTXT = async (
  * @returns {Promise<string>} the bot logs
  */
 export const getBotLogDownloadLink = async (
-  matchId: string,
-  teamGithubUsername: string,
+  matchId: number,
+  teamId: number,
 ): Promise<string> => {
   const match: MatchDao = await getMatchById(matchId)
 
   try {
-    return await getSignedLinkForPath(
-      getBotLogPathTeam(match, teamGithubUsername),
-    )
+    return await getBotLogPathTeam(match, teamId) // TODO: get S3 key
   } catch (e) {
     throw new ApiError(ApiErrorCodes.NOT_FOUND, 'Bot log not found')
   }
-}
-
-/**
- * Get the signed link for a path in the bucket
- * @param {string} path the path to the file in the bucket
- * @returns the signed link
- */
-const getSignedLinkForPath = async (path: string): Promise<string> => {
-  const options: GetSignedUrlConfig = {
-    version: 'v4',
-    action: 'read',
-    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-  }
-
-  const [url] = await storageClient
-    .bucket(BUCKET_NAME)
-    .file(path)
-    .getSignedUrl(options)
-
-  return url
 }

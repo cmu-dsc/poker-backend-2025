@@ -19,6 +19,22 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "db_host_arn" {
+  description = "The ARN of the RDS cluster"
+  type        = string
+}
+
+variable "lambda_code_bucket" {
+  description = "The name of the S3 bucket containing Lambda code"
+  type        = string
+}
+
+variable "lambda_code_key" {
+  description = "The S3 key of the Lambda function code"
+  type        = string
+  default     = "elo_function.zip"
+}
+
 variable "batch_size" {
   description = "Number of matches to process elo at a time"
   type        = number

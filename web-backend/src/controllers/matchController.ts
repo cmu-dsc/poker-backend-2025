@@ -7,43 +7,42 @@ import {
   getEngineLogDownloadLinkTXT,
   getMatchesByTeamId,
 } from 'src/services/matchService'
-import { checkAndrewIdPermissionsForMatch } from 'src/services/permissions/matchPermissionService'
-import { checkUserIdPermissionsForTeamGithubName } from 'src/services/permissions/teamPermissionService'
-import { getUserByAndrewId } from 'src/services/userService'
-import { validateMatchId } from 'src/services/validators/matchValidatorService'
-import { validateTeamName } from 'src/services/validators/teamValidatorService'
+import { checkUserIdPermissionForMatchId } from 'src/services/permissions/matchPermissionService'
 import { UserDao } from '@prisma/client'
+import { checkUserIdPermissionsForTeamId } from 'src/services/permissions/teamPermissionService'
+import { validateId } from 'src/services/validators/idValidatorService'
+import { getUserByIdInclTeam } from 'src/services/userService'
 
 /**
- * Get all matches for a team by the team id (github username)
- * @param {Request<any, any, any, any>} req the request containing the team id
+ * Get all matches for a team by the team id
+ * @param {Request<any, any, any, any> & { userId?: number }} req the request containing the team id
  * @param {Response<MatchDto[]>} res the response containing the matches
  */
-export const getMatchTeamByGithubUsername = async (
-  req: Request<any, any, any, any> & { andrewId?: string },
+export const getMatchTeamByTeamId = async (
+  req: Request<any, any, any, any> & { userId?: number },
   res: Response<MatchDto[]>,
 ) => {
-  const githubName: string = validateTeamName(req.params.githubUsername)
+  const teamId: number = validateId(req.params.teamId)
 
-  await checkUserIdPermissionsForTeamGithubName(req.andrewId!, githubName)
+  await checkUserIdPermissionsForTeamId(req.userId!, teamId)
 
-  const matches: MatchDto[] = await getMatchesByTeamId(githubName)
+  const matches: MatchDto[] = await getMatchesByTeamId(teamId)
 
   res.status(200).json(matches)
 }
 
 /**
  * Get the engine CSV logs for a match by the match id
- * @param {Request<any, any, any, any>} req the request containing the match id
+ * @param {Request<any, any, any, any> & { userId?: number }} req the request containing the match id
  * @param {Response<DownloadLinkDto>} res the response containing the engine logs download link
  */
 export const getMatchByMatchIdLogsEngineCSV = async (
-  req: Request<any, any, any, any> & { andrewId?: string },
+  req: Request<any, any, any, any> & { userId?: number },
   res: Response<DownloadLinkDto>,
 ) => {
-  const matchId: string = validateMatchId(req.params.matchId)
+  const matchId: number = validateId(req.params.matchId)
 
-  await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
+  await checkUserIdPermissionForMatchId(req.userId!, matchId)
 
   const downloadUrlCSV: string = await getEngineLogDownloadLinkCSV(matchId)
 
@@ -54,16 +53,16 @@ export const getMatchByMatchIdLogsEngineCSV = async (
 
 /**
  * Get the engine TXT logs for a match by the match id
- * @param {Request<any, any, any, any>} req the request containing the match id
+ * @param {Request<any, any, any, any> & { userId?: number }} req the request containing the match id
  * @param {Response<DownloadLinkDto>} res the response containing the engine logs download link
  */
 export const getMatchByMatchIdLogsEngineTXT = async (
-  req: Request<any, any, any, any> & { andrewId?: string },
+  req: Request<any, any, any, any> & { userId?: number },
   res: Response<DownloadLinkDto>,
 ) => {
-  const matchId: string = validateMatchId(req.params.matchId)
+  const matchId: number = validateId(req.params.matchId)
 
-  await checkAndrewIdPermissionsForMatch(req.andrewId!, matchId)
+  await checkUserIdPermissionForMatchId(req.userId!, matchId)
 
   const downloadUrlTXT: string = await getEngineLogDownloadLinkTXT(matchId)
 
@@ -74,28 +73,25 @@ export const getMatchByMatchIdLogsEngineTXT = async (
 
 /**
  * Get the bot logs for a match by the match id
- * @param {Request<any, any, any, any>} req the request containing the match id
+ * @param {Request<any, any, any, any> & { userId?: number }} req the request containing the match id
  * @param {Response<DownloadLinkDto>} res the response containing the bot logs download link
  */
 export const getMatchByMatchIdLogsBot = async (
-  req: Request<any, any, any, any> & { andrewId?: string },
+  req: Request<any, any, any, any> & { userId?: number },
   res: Response<DownloadLinkDto>,
 ) => {
-  const matchId: string = validateMatchId(req.params.matchId)
+  const matchId: number = validateId(req.params.matchId)
 
-  await checkAndrewIdPermissionsForMatch(req.andrewId!, req.params.matchId)
+  await checkUserIdPermissionForMatchId(req.userId!, matchId)
 
-  const user: UserDao = await getUserByAndrewId(req.andrewId!)
-  if (!user.teamDaoGithubUsername) {
+  const user: UserDao = await getUserByIdInclTeam(req.userId!)
+  if (!user.teamId) {
     throw new ApiError(
       ApiErrorCodes.FORBIDDEN,
       'User does not have permission to access this match',
     )
   }
-  const downloadUrl: string = await getBotLogDownloadLink(
-    matchId,
-    user.teamDaoGithubUsername,
-  )
+  const downloadUrl: string = await getBotLogDownloadLink(matchId, user.teamId)
 
   res.status(200).json({ downloadUrl, filetype: 'txt' } as DownloadLinkDto)
 }

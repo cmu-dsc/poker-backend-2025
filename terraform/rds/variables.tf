@@ -15,9 +15,9 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "db_subnet_group_name" {
-  description = "Name of DB subnet group"
-  type        = string
+variable "subnet_ids" {
+  description = "List of subnet IDs"
+  type        = list(string)
 }
 
 variable "vpc_security_group_ids" {

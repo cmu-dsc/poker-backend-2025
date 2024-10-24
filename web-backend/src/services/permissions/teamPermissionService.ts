@@ -1,33 +1,25 @@
-import { UserDto } from '@api/generated'
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
-import { TeamDao, UserDao } from '@prisma/client'
-import { getUserByAndrewId } from '../userService'
+import { UserDao } from '@prisma/client'
+import { getUserByIdInclTeam } from '../userService'
 
-export const checkUserIdPermissionsForTeamGithubName = async (
-  userId: string,
-  githubName: string,
+/**
+ * Check if the user has permission to access the team based on whether the user is in the team
+ * @param {number} userId the id of the user
+ * @param {number} teamId the id of the team
+ * @throws {ApiError} if the user does not have permission to access the team
+ * @returns {Promise<boolean>} whether the user has permission to access the team
+ */
+export const checkUserIdPermissionsForTeamId = async (
+  userId: number,
+  teamId: number,
 ): Promise<boolean> => {
-  const user: UserDao = await getUserByAndrewId(userId)
+  const user: UserDao = await getUserByIdInclTeam(userId)
 
-  if (user.teamDaoGithubUsername === githubName) {
+  if (user.teamId === teamId) {
     return true
   }
   throw new ApiError(
     ApiErrorCodes.FORBIDDEN,
     'User does not have permission to access this team',
-  )
-}
-
-export const checkAndrewIdPartOfTeamDto = async (
-  andrewId: string,
-  team: TeamDao & { members?: string[] },
-): Promise<boolean> => {
-  const user: UserDao = await getUserByAndrewId(andrewId)
-  if (user.andrewId && team.members?.includes(user.andrewId)) {
-    return true
-  }
-  throw new ApiError(
-    ApiErrorCodes.FORBIDDEN,
-    'User has to be part of the team to perform this action',
   )
 }

@@ -9,13 +9,13 @@ Install all dependencies:
 
 ```bash
 cd web-backend
-pnpm install
+bun install
 ```
 
 Run the server in dev mode:
 
 ```bash
-pnpm dev
+bun run dev
 ```
 
 The server will be running on `http://localhost:<PORT FROM ENV>`.
@@ -25,7 +25,7 @@ API specification can be found at `http://localhost:<PORT FROM ENV>/api-spec`.
 To build the server:
 
 ```bash
-pnpm build
+bun run build
 ```
 
 ### Project Structure
@@ -57,42 +57,102 @@ Create a `.env` file in the root of the project with the following environment v
 
 ```
 PORT=8080
-GCLOUD_ADMIN_KEY=your-gcp-service-account-key-in-json
-DATABASE_URL="mysql://webbackend:<password>@0.0.0.0:3306/pokerai-db?host=/cloudsql/pokerai-417521:us-east4:pokerai-sql"
+DATABASE_URL="postgresql://your_database_user:your_secure_password@localhost:5432/pokerbots_dev?schema=public"
+DBUSER=your_database_user
+DBPASSWORD=your_secure_password
 ```
 
-To test locally, run cloud-sql-proxy using the [script](/setupproxy.sh).
+### Database
+
+The server uses a PostgreSQL database to store data. You can run a PostgreSQL server locally for developing if you have docker installed. Run:
+
+```bash
+bun run db:start
+```
+
+to start the database and:
+
+```bash
+bun run db:stop
+```
+to stop the database.
 
 ## Datamodel
 
-The data is stored in MySQL, the schema is as follows:
+The data is stored in a PostgreSQL DB, the schema is as follows:
 
 ```mermaid
-
-classDiagram
-    class UserDao {
-        + andrewId: string
-        + teamDaoGithubUsername: string?
+erDiagram
+    UserDao {
+        Int id PK
+        String email
+        PermissionLevel permissionLevel
+        Int teamId FK
+        Boolean isBlocked
+    }
+    
+    TeamDao {
+        Int id PK
+        String name
+        Boolean isDeleted
+        Int activeBotId FK
+        Int elo
     }
 
-    class TeamDao {
-        + githubUsername: string
+    TeamMatchDao {
+        Int id PK
+        Int matchId FK
+        Int teamId FK
+        Int bankroll
+        Int botId FK
     }
 
-    class TeamMatchDao {
-        + id: int
-        + matchId: string
-        + teamId: string
-        + bankroll: int
+    MatchDao {
+        Int matchId PK
+        DateTime timestamp
+        MatchStatus matchStatus
+        Int matchRequestId FK
     }
 
-    class MatchDao {
-        + matchId: string
-        + timestamp: DateTime
+    TeamInviteDao {
+        Int id PK
+        Int teamId FK
+        DateTime sendAt
+        Int userId FK
     }
 
-    UserDao "1..4" --> "1" TeamDao : "is a member of"
-    TeamDao "1" --> "*" TeamMatchDao : "participates in"
-    TeamMatchDao "1" -- "1" MatchDao : "associated with"
+    MatchRequestDao {
+        Int id PK
+        Int requestingTeamId FK
+        Int requestedTeamId FK
+        DateTime sendAt
+        Boolean isAccepted
+    }
+
+    BotDao {
+        Int id PK
+        Int version
+        Int teamId FK
+        DateTime created
+        String storageLocation
+        Int activeTeamId FK
+    }
+
+    UserDao ||--o{ TeamDao : "team"
+    TeamDao ||--o{ UserDao : "members"
+    UserDao ||--o{ TeamInviteDao : "invites"
+    TeamDao ||--o{ TeamInviteDao : "invites"
+    TeamDao ||--o{ TeamMatchDao : "teamMatches"
+    TeamDao ||--o{ MatchRequestDao : "requestingMatches"
+    TeamDao ||--o{ MatchRequestDao : "requestedMatches"
+    TeamMatchDao ||--|| MatchDao : "match"
+    TeamMatchDao ||--|| BotDao : "bot"
+    TeamInviteDao ||--|| UserDao : "user"
+    TeamInviteDao ||--|| TeamDao : "team"
+    MatchDao ||--|| MatchRequestDao : "matchRequest"
+    MatchRequestDao ||--|| TeamDao : "requestingTeam"
+    MatchRequestDao ||--|| TeamDao : "requestedTeam"
+    BotDao ||--|| TeamDao : "team"
+    BotDao ||--o| TeamDao : "activeBot"
 
 ```

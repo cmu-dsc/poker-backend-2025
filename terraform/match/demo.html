@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Match Logs Subscription Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    .table-results {
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: 'Arial', sans-serif;
+      min-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      padding: 10px;
+      border: 1px solid #dddddd;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-results h2 {
+      background-color: #0073e6;
+      color: #ffffff;
+      padding: 8px 10px;
+      margin: -10px -10px 10px -10px;
+      border-radius: 4px 4px 0 0;
+      font-size: 1em;
+      flex-shrink: 0;
+    }
+
+    .log-item {
+      padding: 5px 10px;
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .log-item:last-child {
+      border-bottom: none;
+    }
+
+    .no-logs {
+      font-size: 0.9em;
+      font-family: 'Arial', sans-serif;
+      color: #333;
+      padding: 5px 10px;
+    }
+
+    #logs {
+      max-height: 800px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Match Logs Subscription Demo</h1>
+    <div>
+      <label for="matchId">Match ID:</label>
+      <input type="text" id="matchId" placeholder="Enter Match ID">
+      <button onclick="subscribeToMatchLogs()">Subscribe</button>
+    </div>
+    <div class="table-results">
+      <h2>Match Logs</h2>
+      <div id="logs">
+        <div id="noLogs" class="no-logs">
+          <p>No logs received yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const AWS_REGION = "us-east-1";
+    const APPSYNC_ENDPOINT_ID = "the random string in the appsync api url";
+    const APPSYNC_API_KEY = "appsync_api_key";
+
+    function encodeAppSyncCredentials () {
+      const creds = {
+        host: `${APPSYNC_ENDPOINT_ID}.appsync-api.${AWS_REGION}.amazonaws.com`,
+        "x-api-key": APPSYNC_API_KEY,
+      };
+      return window.btoa(JSON.stringify(creds));
+    }
+
+    function getWebsocketUrl () {
+      const header = encodeAppSyncCredentials();
+      const payload = window.btoa(JSON.stringify({}));
+      return `wss://${APPSYNC_ENDPOINT_ID}.appsync-realtime-api.${AWS_REGION}.amazonaws.com/graphql?header=${header}&payload=${payload}`;
+    }
+
+    function startSubscription (websocket, matchId) {
+      const subscribeMessage = {
+        id: window.crypto.randomUUID(),
+        type: "start",
+        payload: {
+          data: JSON.stringify({
+            query: `subscription onNewLog($matchId: ID!) {
+                        onNewLog(match_id: $matchId) {
+                          message
+                          timestamp
+                          level
+                        }
+                      }`,
+            variables: {
+              matchId: matchId
+            }
+          }),
+          extensions: {
+            authorization: {
+              "x-api-key": APPSYNC_API_KEY,
+              host: `${APPSYNC_ENDPOINT_ID}.appsync-api.${AWS_REGION}.amazonaws.com`,
+            },
+          },
+        },
+      };
+      websocket.send(JSON.stringify(subscribeMessage));
+    }
+
+    function handleLog (log) {
+      const logsList = document.getElementById("logs");
+      const logElem = document.createElement("div");
+      logElem.className = "log-item";
+      logElem.textContent = log.message;
+      logElem.dataset.timestamp = log.timestamp;
+
+      // Insert the log in the correct position based on timestamp
+      const existingLogs = Array.from(logsList.children).filter(child => child.className === 'log-item');
+      const insertIndex = existingLogs.findIndex(existingLog => parseInt(existingLog.dataset.timestamp) > log.timestamp);
+
+      if (insertIndex === -1) {
+        logsList.appendChild(logElem);
+      } else {
+        logsList.insertBefore(logElem, existingLogs[insertIndex]);
+      }
+
+      document.getElementById("noLogs").style.display = "none";
+      scrollToBottom();
+    }
+
+    async function subscribeToMatchLogs () {
+      const matchId = document.getElementById("matchId").value;
+      if (!matchId) {
+        alert("Please enter a Match ID");
+        return;
+      }
+
+      try {
+        const logs = await fetchLogs(matchId);
+        logs.forEach(handleLog);
+
+        const url = getWebsocketUrl();
+        const websocket = new WebSocket(url, ["graphql-ws"]);
+
+        websocket.addEventListener("open", () => {
+          websocket.send(JSON.stringify({ type: "connection_init" }));
+        });
+
+        websocket.addEventListener("message", (event) => {
+          const message = JSON.parse(event.data);
+          console.log(message);
+
+          switch (message.type) {
+            case "connection_ack":
+              startSubscription(websocket, matchId);
+              break;
+            case "start_ack":
+              console.log("Subscription started");
+              break;
+            case "error":
+              console.error(message);
+              break;
+            case "data":
+              handleLog(message.payload.data.onNewLog);
+              break;
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching logs:", error);
+        alert("An error occurred while fetching logs. Please try again.");
+      }
+    }
+
+    function fetchLogs (matchId) {
+      const query = `query GetLogs($matchId: ID!) {
+        getLogs(match_id: $matchId) {
+          message
+          timestamp
+          level
+        }
+      }`;
+
+      return fetch(`https://${APPSYNC_ENDPOINT_ID}.appsync-api.${AWS_REGION}.amazonaws.com/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': APPSYNC_API_KEY
+        },
+        body: JSON.stringify({
+          query: query,
+          variables: { matchId: matchId }
+        })
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.errors) {
+            throw new Error(result.errors[0].message);
+          }
+          return result.data.getLogs || [];
+        });
+    }
+
+    function scrollToBottom () {
+      const logsContainer = document.getElementById("logs");
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>

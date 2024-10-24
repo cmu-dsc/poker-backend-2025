@@ -1,41 +1,96 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+enum PermissionLevel {
+  ADMIN
+  USER
+}
+
+enum MatchStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 model UserDao {
-  andrewId              String   @id @unique
-  TeamDao               TeamDao? @relation(fields: [teamDaoGithubUsername], references: [githubUsername])
-  teamDaoGithubUsername String?
+  id              Int             @id @unique @default(autoincrement())
+  email           String          @unique
+  permissionLevel PermissionLevel @default(USER)
+  team            TeamDao?        @relation(fields: [teamId], references: [id])
+  teamId          Int?
+  invites         TeamInviteDao[]
+  isBlocked       Boolean         @default(false)
 }
 
 model TeamDao {
-  githubUsername String         @id @unique
-  members        UserDao[]
-  TeamMatchDao   TeamMatchDao[]
+  id                Int               @id @unique @default(autoincrement())
+  members           UserDao[]
+  invites           TeamInviteDao[]
+  name              String
+  isDeleted         Boolean           @default(false)
+  teamMatches       TeamMatchDao[]
+  requestingMatches MatchRequestDao[] @relation("RequestingTeam")
+  requestedMatches  MatchRequestDao[] @relation("RequestedTeam")
+  activeBot         BotDao            @relation("ActiveBot", fields: [activeBotId], references: [id])
+  activeBotId       Int               @unique
+  bots              BotDao[]          @relation("bots")
+  elo               Int               @default(1000)
 }
 
 model TeamMatchDao {
-  id       Int      @id @default(autoincrement()) @unique
+  id       Int      @id @unique @default(autoincrement())
   match    MatchDao @relation(fields: [matchId], references: [matchId])
-  matchId  String
-  team     TeamDao  @relation(fields: [teamId], references: [githubUsername])
-  teamId   String
+  matchId  Int
+  team     TeamDao  @relation(fields: [teamId], references: [id])
+  teamId   Int
   bankroll Int
+  bot      BotDao   @relation(fields: [botId], references: [id])
+  botId    Int
 }
 
 model MatchDao {
-  matchId       String         @id @unique
-  timestamp     DateTime       @default(now())
-  teamMatchDaos TeamMatchDao[]
+  matchId        Int              @id @unique @default(autoincrement())
+  timestamp      DateTime         @default(now())
+  teamMatches    TeamMatchDao[]
+  matchStatus    MatchStatus      @default(NOT_STARTED)
+  matchRequest   MatchRequestDao? @relation(fields: [matchRequestId], references: [id])
+  matchRequestId Int?             @unique
+}
+
+model TeamInviteDao {
+  id     Int      @id @unique @default(autoincrement())
+  team   TeamDao  @relation(fields: [teamId], references: [id])
+  teamId Int
+  sendAt DateTime @default(now())
+  user   UserDao  @relation(fields: [userId], references: [id])
+  userId Int
+}
+
+model MatchRequestDao {
+  id               Int       @id @unique @default(autoincrement())
+  match            MatchDao?
+  requestingTeam   TeamDao   @relation("RequestingTeam", fields: [requestingTeamId], references: [id])
+  requestingTeamId Int
+  requestedTeam    TeamDao   @relation("RequestedTeam", fields: [requestedTeamId], references: [id])
+  requestedTeamId  Int
+  sendAt           DateTime  @default(now())
+  isAccepted       Boolean
+}
+
+model BotDao {
+  id              Int            @id @unique @default(autoincrement())
+  version         Int
+  team            TeamDao        @relation("bots", fields: [teamId], references: [id])
+  teamId          Int
+  created         DateTime       @default(now())
+  storageLocation String
+  teamMatches     TeamMatchDao[]
+  activeTeam      TeamDao?       @relation("ActiveBot")
+  activeTeamId    Int?           @unique
 }

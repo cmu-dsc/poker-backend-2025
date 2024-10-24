@@ -9,13 +9,23 @@ output "db_reader_endpoint" {
   value       = module.rds.reader_endpoint
 }
 
-# S3 Outputs
-output "poker_agents_bucket_id" {
-  description = "The ID of the poker-agents S3 bucket"
-  value       = module.s3.poker_agents_bucket_id
+output "backend_alb_dns_name" {
+  description = "The DNS name of the ALB for the backend"
+  value       = module.backend.alb_dns_name
 }
 
-output "poker_logs_bucket_id" {
-  description = "The ID of the poker-logs S3 bucket"
-  value       = module.s3.poker_logs_bucket_id
+output "lambda_function_arns" {
+  description = "ARNs of the Lambda functions"
+  value       = [module.elo.lambda_function_arn, module.match.match_function_arn]
+}
+
+output "appsync_api_url" {
+  description = "The URL of the AppSync GraphQL API"
+  value       = module.match.appsync_api_url
+}
+
+output "appsync_api_key" {
+  description = "The API key for the AppSync GraphQL API"
+  value       = module.match.appsync_api_key
+  sensitive   = true
 }

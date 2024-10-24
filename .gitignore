@@ -52,6 +52,8 @@ __fixtures__/custom-modules-dir/patches/
 
 .env
 
-**/cloud-sql-proxy
-
 *.csv
+
+.DS_Store
+
+__pycache__

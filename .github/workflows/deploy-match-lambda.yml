@@ -1,0 +1,59 @@
+name: Deploy Match Lambda
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [rebuild-engine]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.ENGINE_PAT }}
+
+      - name: Update submodules
+        run: |
+          git submodule update --remote --recursive
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "match-function/**/requirements.txt"
+  
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Merge requirements
+        run: |
+          cat match-function/requirements.txt match-function/poker-engine-2025/requirements.txt | sort -u > combined_requirements.txt
+          mv combined_requirements.txt match-function/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          uv venv -p 3.12
+          source .venv/bin/activate
+          uv pip install -r match-function/requirements.txt
+          uv pip freeze > match-function/requirements.txt
+
+      - name: Zip function
+        run: |
+          cd match-function
+          zip -r ../match_function.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Upload to S3 and update Lambda
+        run: |
+          aws s3 cp match_function.zip s3://cmu-poker-lambdas/match_function.zip
+          aws lambda update-function-code --function-name match-function --s3-bucket cmu-poker-lambdas --s3-key match_function.zip

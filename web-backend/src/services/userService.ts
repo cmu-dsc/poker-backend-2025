@@ -1,42 +1,42 @@
 import { ApiError, ApiErrorCodes } from 'src/middleware/errorhandler/APIError'
 import { dbClient } from 'src/server'
-import { UserDao } from '@prisma/client'
+import { TeamDao, UserDao } from '@prisma/client'
 
 /**
- * Get a user from the database by userId; adds the user if it does not exist
- * @param {string} userId the id of the user
- * @returns {UserDto} the corresponding user
+ * Get a user from the database by ID
+ * @param {number} id the ID of the user
+ * @throws {ApiError} if the user is not found
+ * @returns {UserDao & { team: TeamDao | null }} the corresponding user
  */
-export const getUserByAndrewId = async (andrewId: string): Promise<UserDao> => {
-  let retrievedUser: UserDao | null = (await dbClient.userDao.findUnique({
-    where: {
-      andrewId,
-    },
-  })) as any as UserDao | null
+export const getUserByIdInclTeam = async (
+  id: number,
+): Promise<UserDao & { team: TeamDao | null }> => {
+  let retrievedUser: (UserDao & { team: TeamDao | null }) | null =
+    await dbClient.userDao.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        team: true,
+      },
+    })
 
   if (!retrievedUser) {
-    retrievedUser = (await dbClient.userDao.create({
-      data: {
-        andrewId,
-      },
-    })) as any as UserDao
+    throw new ApiError(ApiErrorCodes.NOT_FOUND, `User with ID ${id} not found`)
   }
-
   return retrievedUser
 }
 
 /**
- * Get users from the database by userIds
- * @param andrewIds the ids of the users
+ * Get users from the database by IDs
+ * @param ids the IDs of the users
  * @returns the corresponding users
  */
-export const getUsersByAndrewIds = async (
-  andrewIds: string[],
-): Promise<UserDao[]> => {
+export const getUsersByIds = async (ids: number[]): Promise<UserDao[]> => {
   return dbClient.userDao.findMany({
     where: {
-      andrewId: {
-        in: andrewIds,
+      id: {
+        in: ids,
       },
     },
   })
@@ -44,37 +44,14 @@ export const getUsersByAndrewIds = async (
 
 /**
  * Remove a user from a team
- * @param {string} andrewId the id of the user
+ * @param {number} id the ID of the user
  * @returns {Promise<boolean>}
  */
-export const leaveTeam = async (andrewId: string): Promise<boolean> => {
-  const teamId = (await getUserByAndrewId(andrewId)).teamDaoGithubUsername
-  try {
-    await dbClient.userDao.update({
-      where: {
-        andrewId,
-      },
-      data: {
-        teamDaoGithubUsername: null,
-      },
-    })
-
-    if (teamId) {
-      await dbClient.teamDao.deleteMany({
-        where: {
-          githubUsername: teamId,
-          members: {
-            none: {},
-          },
-        },
-      })
-    }
-  } catch {
-    throw new ApiError(
-      ApiErrorCodes.BUSINESS_LOGIC_ERROR,
-      'Failed to leave team',
-    )
-  }
-
+export const leaveTeam = async (id: number): Promise<boolean> => {
+  // TODO delete team if it is empty
+  await dbClient.userDao.update({
+    where: { id },
+    data: { teamId: null },
+  })
   return true
 }

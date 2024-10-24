@@ -13,11 +13,6 @@ variable "tags" {
   }
 }
 
-variable "db_subnet_group_name" {
-  description = "Name of DB subnet group"
-  type        = string
-}
-
 variable "db_username" {
   description = "Username for the master DB user"
   type        = string
@@ -30,7 +25,29 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "vpc_security_group_ids" {
-  description = "List of VPC security groups to associate"
-  type        = list(string)
+variable "lambda_code_bucket" {
+  description = "The name of the S3 bucket containing Lambda code"
+  type        = string
+}
+
+variable "ecr_repository_url" {
+  description = "The URL of the ECR repository"
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID"
+  type        = string
+}
+
+variable "github_access_token" {
+  description = "GitHub personal access token"
+  type        = string
+  sensitive   = true
 }
