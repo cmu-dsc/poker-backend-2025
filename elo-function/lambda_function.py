@@ -58,9 +58,7 @@ def lambda_handler(event, context):
                     continue
 
                 # Fetch Elo ratings for both players in a single query
-                cur.execute(
-                    "SELECT player_id, elo_rating FROM players WHERE player_id IN (%s, %s)", (player1_id, player2_id)
-                )
+                cur.execute("SELECT player_id, elo_rating FROM players WHERE player_id IN (%s, %s)", (player1_id, player2_id))
                 player_ratings = dict(cur.fetchall())
 
                 player1_elo = player_ratings[player1_id]

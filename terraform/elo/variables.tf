@@ -34,15 +34,3 @@ variable "lambda_code_key" {
   type        = string
   default     = "elo_function.zip"
 }
-
-variable "batch_size" {
-  description = "Number of matches to process elo at a time"
-  type        = number
-  default     = 25
-}
-
-variable "maximum_batching_window_in_seconds" {
-  description = "The maximum amount of time to gather records before invoking the function, in seconds"
-  type        = number
-  default     = 60
-}
