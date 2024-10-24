@@ -259,7 +259,7 @@ paths:
           name: teamId
           required: true
           schema:
-            type: string
+            type: number
           description: The team id of the team
       responses:
         "200":
@@ -280,7 +280,7 @@ paths:
           name: teamId
           required: true
           schema:
-            type: string
+            type: number
           description: The team id of the team
       requestBody:
         required: true
@@ -315,7 +315,7 @@ paths:
           name: teamId
           required: true
           schema:
-            type: string
+            type: number
           description: The team id of the team
       responses:
         "204":
@@ -336,7 +336,7 @@ paths:
           name: teamId
           required: true
           schema:
-            type: string
+            type: number
           description: The team id of the team
       responses:
         "200":
@@ -358,7 +358,7 @@ paths:
           name: matchId
           required: true
           schema:
-            type: string
+            type: number
           description: The match id
       responses:
         "200":
@@ -384,7 +384,7 @@ paths:
           name: matchId
           required: true
           schema:
-            type: string
+            type: number
           description: The match id
       responses:
         "200":
@@ -410,7 +410,7 @@ paths:
           name: matchId
           required: true
           schema:
-            type: string
+            type: number
           description: The match id
       responses:
         "200":
