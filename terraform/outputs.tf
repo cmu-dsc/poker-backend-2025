@@ -14,11 +14,6 @@ output "backend_alb_dns_name" {
   value       = module.backend.alb_dns_name
 }
 
-output "lambda_function_arns" {
-  description = "ARNs of the Lambda functions"
-  value       = [module.elo.lambda_function_arn]
-}
-
 output "appsync_api_url" {
   description = "The URL of the AppSync GraphQL API"
   value       = module.match.appsync_api_url

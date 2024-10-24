@@ -93,10 +93,32 @@ resource "aws_iam_role_policy" "github_actions_lambda_update" {
           "ecr:InitiateLayerUpload",
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload",
-          "ecr:PutImage"
+          "ecr:PutImage",
+          "ecr:BatchGetImage"
         ]
         Resource = [aws_ecr_repository.poker_ecr.arn]
       }
     ]
   })
 }
+
+terraform {
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
+  }
+}
+
+provider "github" {
+  token = var.github_access_token
+  owner = "cmu-dsc"
+}
+
+resource "github_actions_secret" "github_actions_role_arn" {
+  repository      = "poker-backend-2025"
+  secret_name     = "AWS_ROLE_ARN"
+  plaintext_value = aws_iam_role.github_actions.arn
+}
+

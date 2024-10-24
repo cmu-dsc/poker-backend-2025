@@ -25,16 +25,6 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "lambda_code_bucket" {
-  description = "The name of the S3 bucket containing Lambda code"
-  type        = string
-}
-
-variable "ecr_repository_url" {
-  description = "The URL of the ECR repository"
-  type        = string
-}
-
 variable "google_client_id" {
   description = "Google OAuth 2.0 Client ID"
   type        = string

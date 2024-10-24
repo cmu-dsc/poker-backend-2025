@@ -1,10 +1,6 @@
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
-  default = {
-    Environment = "prod"
-    Project     = "pokerbots-2025"
-  }
 }
 
 variable "github_repositories" {
@@ -16,4 +12,10 @@ variable "github_repositories" {
 variable "lambda_function_arns" {
   description = "ARNs of the Lambda functions to update"
   type        = list(string)
+}
+
+variable "github_access_token" {
+  description = "GitHub personal access token"
+  type        = string
+  sensitive   = true
 }

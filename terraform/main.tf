@@ -69,7 +69,7 @@ module "backend" {
   db_username          = var.db_username
   db_password          = var.db_password
   security_group_id    = aws_security_group.pokerbots_sg.id
-  ecr_repository_url   = var.ecr_repository_url
+  ecr_repository_url   = module.artifacts.ecr_repository_url
   google_client_id     = var.google_client_id
   google_client_secret = var.google_client_secret
 }
@@ -115,7 +115,7 @@ module "elo" {
   db_host_arn        = module.rds.arn
   db_username        = var.db_username
   db_password        = var.db_password
-  lambda_code_bucket = var.lambda_code_bucket
+  lambda_code_bucket = module.artifacts.poker_lambdas_bucket_id
 }
 
 module "frontend" {
@@ -126,4 +126,12 @@ module "frontend" {
   cloudflare_zone_id   = var.cloudflare_zone_id
   github_access_token  = var.github_access_token
   api_endpoint         = module.backend.alb_dns_name
+}
+
+module "artifacts" {
+  source = "./artifacts"
+
+  tags                 = var.tags
+  lambda_function_arns = [module.elo.lambda_function_arn]
+  github_access_token  = var.github_access_token
 }
