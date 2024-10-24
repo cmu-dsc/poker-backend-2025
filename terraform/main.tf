@@ -43,9 +43,10 @@ resource "aws_security_group" "pokerbots_sg" {
 }
 
 module "backend" {
-  source               = "./backend"
-  aws_region           = var.aws_region
+  source = "./backend"
+
   tags                 = var.tags
+  aws_region           = var.aws_region
   vpc_id               = data.aws_vpc.default.id
   subnet_ids           = data.aws_subnets.default.ids
   db_host              = module.rds.cluster_endpoint
@@ -60,7 +61,8 @@ module "backend" {
 }
 
 module "rds" {
-  source                 = "./rds"
+  source = "./rds"
+
   tags                   = var.tags
   subnet_ids             = data.aws_subnets.default.ids
   db_username            = var.db_username
@@ -74,7 +76,8 @@ module "s3" {
 }
 
 module "match" {
-  source                  = "./match"
+  source = "./match"
+
   tags                    = var.tags
   aws_region              = var.aws_region
   poker_agents_bucket_id  = module.s3.poker_agents_bucket_id
@@ -89,7 +92,8 @@ module "match" {
 }
 
 module "elo" {
-  source             = "./elo"
+  source = "./elo"
+
   tags               = var.tags
   db_host            = module.rds.cluster_endpoint
   db_host_arn        = module.rds.arn
@@ -99,11 +103,11 @@ module "elo" {
 }
 
 module "frontend" {
-  source                = "./frontend"
-  tags                  = var.tags
-  github_repository     = "https://github.com/cmu-dsc/poker-frontend-2025"
-  github_branch         = "main"
-  github_access_token   = var.github_access_token
-  aws_region            = var.aws_region
-  api_endpoint          = "http://${module.backend.alb_dns_name}"
+  source = "./frontend"
+
+  tags                 = var.tags
+  cloudflare_api_token = var.cloudflare_api_token
+  cloudflare_zone_id   = var.cloudflare_zone_id
+  github_access_token  = var.github_access_token
+  api_endpoint         = module.backend.alb_dns_name
 }

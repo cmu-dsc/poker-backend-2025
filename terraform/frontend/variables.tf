@@ -6,12 +6,7 @@ variable "tags" {
 variable "github_repository" {
   description = "The GitHub repository URL"
   type        = string
-}
-
-variable "github_branch" {
-  description = "The GitHub branch to use"
-  type        = string
-  default     = "main"
+  default     = "https://github.com/cmu-dsc/poker-frontend-2025"
 }
 
 variable "github_access_token" {
@@ -20,12 +15,18 @@ variable "github_access_token" {
   sensitive   = true
 }
 
-variable "aws_region" {
-  description = "The AWS region to deploy to"
+variable "api_endpoint" {
+  description = "The API endpoint URL"
   type        = string
 }
 
-variable "api_endpoint" {
-  description = "The API endpoint URL"
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for cmudsc.com"
   type        = string
 }
