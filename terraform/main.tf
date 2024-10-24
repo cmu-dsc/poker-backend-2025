@@ -86,7 +86,6 @@ module "match" {
   poker_logs_bucket_arn   = module.s3.poker_logs_bucket_arn
   sqs_queue_url           = module.elo.sqs_queue_url
   sqs_queue_arn           = module.elo.sqs_queue_arn
-  lambda_code_bucket      = var.lambda_code_bucket
   cognito_user_pool_id    = module.backend.cognito_user_pool_id
   cognito_app_client_id   = module.backend.cognito_app_client_id
 }
