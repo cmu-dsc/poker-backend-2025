@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import sys
 import zipfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
@@ -31,16 +32,18 @@ APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
 
 async def call_appsync_mutation(match_id, timestamp, message, level):
     mutation = """
-    mutation AddLog($match_id: ID!, $timestamp: AWSTimestamp!, $message: String!, $level: String!) {
-        addLog(match_id: $match_id, timestamp: $timestamp, message: $message, level: $level) {
+    mutation AddLog($match_id: ID!, $timestamp: AWSTimestamp!, $message: String!, $level: String!, $expiration: AWSTimestamp!) {
+        addLog(match_id: $match_id, timestamp: $timestamp, message: $message, level: $level, expiration: $expiration) {
             match_id
             timestamp
             message
             level
+            expiration
         }
     }
     """
-    variables = {"match_id": match_id, "timestamp": int(timestamp), "message": message, "level": level}
+    expiration = int(time.time()) + (30 * 60)  # 30 minutes
+    variables = {"match_id": match_id, "timestamp": int(timestamp), "message": message, "level": level, "expiration": expiration}
     payload = {"query": mutation, "variables": variables}
     headers = {"Content-Type": "application/json", "x-api-key": APPSYNC_API_KEY}
 
@@ -56,7 +59,7 @@ class AppSyncHandler(logging.Handler):
         super().__init__()
         self.match_id = match_id
         self.queue = asyncio.Queue()
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.executor = ThreadPoolExecutor(max_workers=10)
         self.running = True
         self.background_task = self.executor.submit(self.background_worker)
 
@@ -75,14 +78,21 @@ class AppSyncHandler(logging.Handler):
         async def process_queue():
             while self.running or not self.queue.empty():
                 try:
-                    match_id, timestamp, message, level = await asyncio.wait_for(self.queue.get(), timeout=1.0)
-                    try:
-                        await call_appsync_mutation(match_id, timestamp, message, level)
-                    except Exception:
-                        self.handleError(None)
-                    finally:
-                        self.queue.task_done()
-                except asyncio.TimeoutError:
+                    messages = []
+                    for _ in range(10):
+                        try:
+                            msg = await asyncio.wait_for(self.queue.get(), timeout=0.1)
+                            messages.append(msg)
+                        except asyncio.TimeoutError:
+                            break
+
+                    if messages:
+                        tasks = [call_appsync_mutation(match_id, timestamp, message, level) for match_id, timestamp, message, level in messages]
+                        await asyncio.gather(*tasks)
+                        for _ in messages:
+                            self.queue.task_done()
+                except Exception:
+                    self.handleError(None)
                     continue
 
         loop.run_until_complete(process_queue())
@@ -108,7 +118,7 @@ def setup_match_logger(match_id):
     file_handler.setFormatter(formatter)
 
     appsync_handler = AppSyncHandler(match_id)
-    appsync_handler.setLevel(logging.DEBUG)
+    appsync_handler.setLevel(logging.INFO)
     appsync_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)

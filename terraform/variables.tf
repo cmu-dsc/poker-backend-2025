@@ -46,19 +46,13 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
-variable "cloudflare_api_token" {
-  description = "Cloudflare API token"
-  type        = string
-  sensitive   = true
-}
-
-variable "cloudflare_zone_id" {
-  description = "Cloudflare Zone ID"
+variable "google_client_id" {
+  description = "Google OAuth 2.0 Client ID"
   type        = string
 }
 
-variable "github_access_token" {
-  description = "GitHub personal access token"
+variable "google_client_secret" {
+  description = "Google OAuth 2.0 Client Secret"
   type        = string
   sensitive   = true
 }

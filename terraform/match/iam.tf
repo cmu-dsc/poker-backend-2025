@@ -101,8 +101,8 @@ resource "aws_iam_role_policy_attachment" "appsync_logs_policy" {
   role       = aws_iam_role.appsync_logs_role.name
 }
 
-resource "aws_iam_role" "appsync_dynamodb_role" {
-  name = "appsync-dynamodb-role"
+resource "aws_iam_role" "appsync_lambda_role" {
+  name = "appsync-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -114,23 +114,27 @@ resource "aws_iam_role" "appsync_dynamodb_role" {
       }
     }]
   })
+
+  tags = var.tags
 }
 
-resource "aws_iam_role_policy" "appsync_dynamodb_policy" {
-  name = "appsync-dynamodb-policy"
-  role = aws_iam_role.appsync_dynamodb_role.id
+resource "aws_iam_role_policy" "appsync_lambda_policy" {
+  name = "appsync-lambda-policy"
+  role = aws_iam_role.appsync_lambda_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Action = [
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:Query",
-        "dynamodb:Scan"
+        "lambda:InvokeFunction"
       ]
-      Resource = aws_dynamodb_table.match_logs.arn
+      Resource = aws_lambda_function.valkey_handler.arn
     }]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_vpc_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+  role       = aws_iam_role.lambda_role.name
 }

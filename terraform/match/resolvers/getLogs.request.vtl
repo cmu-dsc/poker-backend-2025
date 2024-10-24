@@ -1,17 +1,9 @@
-#set($last_timestamp = $util.defaultIfNull($ctx.args.last_timestamp, 0))
 {
     "version": "2018-05-29",
-    "operation": "Query",
-    "query": {
-        "expression": "match_id = :match_id AND #ts > :last_timestamp",
-        "expressionNames": {
-            "#ts": "timestamp"
-        },
-        "expressionValues": {
-            ":match_id": $util.dynamodb.toDynamoDBJson($ctx.args.match_id),
-            ":last_timestamp": $util.dynamodb.toDynamoDBJson($last_timestamp)
-        }
-    },
-    "scanIndexForward": true,
-    "select": "ALL_ATTRIBUTES"
+    "operation": "Invoke",
+    "payload": {
+        "match_id": $util.toJson($ctx.args.match_id),
+        "last_timestamp": $util.toJson($ctx.args.last_timestamp),
+        "operation": "getLogs"
+    }
 }

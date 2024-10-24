@@ -9,6 +9,21 @@ variable "tags" {
   type        = map(string)
 }
 
+variable "subnet_ids" {
+  description = "List of subnet IDs for ElastiCache"
+  type        = list(string)
+}
+
+variable "vpc_id" {
+  description = "VPC ID for security groups"
+  type        = string
+}
+
+variable "security_group_id" {
+  description = "The ID of the security group"
+  type        = string
+}
+
 variable "poker_agents_bucket_id" {
   description = "The ID of the poker-agents S3 bucket"
   type        = string
