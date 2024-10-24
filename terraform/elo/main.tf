@@ -42,7 +42,6 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-# IAM Policy for Lambda
 resource "aws_iam_role_policy" "lambda_policy" {
   name = "elo_lambda_policy"
   role = aws_iam_role.lambda_role.id
@@ -80,7 +79,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-# Lambda Event Source Mapping
 resource "aws_lambda_event_source_mapping" "sqs_lambda_trigger" {
   event_source_arn                   = aws_sqs_queue.match_results_queue.arn
   function_name                      = aws_lambda_function.elo_function.arn

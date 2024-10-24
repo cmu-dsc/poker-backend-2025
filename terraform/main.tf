@@ -43,23 +43,25 @@ resource "aws_security_group" "pokerbots_sg" {
 }
 
 module "backend" {
-  source             = "./backend"
+  source = "./backend"
 
-  tags               = var.tags
-  aws_region         = var.aws_region
-  vpc_id             = data.aws_vpc.default.id
-  subnet_ids         = data.aws_subnets.default.ids
-  db_host            = module.rds.cluster_endpoint
-  db_reader_endpoint = module.rds.reader_endpoint
-  db_name            = "pokerbotsdb"
-  db_username        = var.db_username
-  db_password        = var.db_password
-  security_group_id  = aws_security_group.pokerbots_sg.id
-  ecr_repository_url = var.ecr_repository_url
+  tags                 = var.tags
+  aws_region           = var.aws_region
+  vpc_id               = data.aws_vpc.default.id
+  subnet_ids           = data.aws_subnets.default.ids
+  db_host              = module.rds.cluster_endpoint
+  db_reader_endpoint   = module.rds.reader_endpoint
+  db_name              = "pokerbotsdb"
+  db_username          = var.db_username
+  db_password          = var.db_password
+  security_group_id    = aws_security_group.pokerbots_sg.id
+  ecr_repository_url   = var.ecr_repository_url
+  google_client_id     = var.google_client_id
+  google_client_secret = var.google_client_secret
 }
 
 module "rds" {
-  source                 = "./rds"
+  source = "./rds"
 
   tags                   = var.tags
   subnet_ids             = data.aws_subnets.default.ids
@@ -74,9 +76,10 @@ module "s3" {
 }
 
 module "match" {
-  source                  = "./match"
+  source = "./match"
 
   tags                    = var.tags
+  aws_region              = var.aws_region
   poker_agents_bucket_id  = module.s3.poker_agents_bucket_id
   poker_agents_bucket_arn = module.s3.poker_agents_bucket_arn
   poker_logs_bucket_id    = module.s3.poker_logs_bucket_id
@@ -84,10 +87,12 @@ module "match" {
   sqs_queue_url           = module.elo.sqs_queue_url
   sqs_queue_arn           = module.elo.sqs_queue_arn
   lambda_code_bucket      = var.lambda_code_bucket
+  cognito_user_pool_id    = module.backend.cognito_user_pool_id
+  cognito_app_client_id   = module.backend.cognito_app_client_id
 }
 
 module "elo" {
-  source             = "./elo"
+  source = "./elo"
 
   tags               = var.tags
   db_host            = module.rds.cluster_endpoint

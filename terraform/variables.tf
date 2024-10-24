@@ -35,6 +35,17 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+variable "google_client_id" {
+  description = "Google OAuth 2.0 Client ID"
+  type        = string
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth 2.0 Client Secret"
+  type        = string
+  sensitive   = true
+}
+
 variable "cloudflare_api_token" {
   description = "Cloudflare API token"
   type        = string
