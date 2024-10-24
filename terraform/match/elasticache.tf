@@ -1,5 +1,5 @@
 resource "aws_elasticache_serverless_cache" "match_logs" {
-  engine              = "redis"
+  engine              = "valkey"
   name                = "match-logs"
   description         = "Match logs cache using serverless"
   security_group_ids  = [var.security_group_id]
