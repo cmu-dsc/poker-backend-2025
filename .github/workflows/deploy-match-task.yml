@@ -1,6 +1,11 @@
 name: Build and Push Match Task Container
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'match-task/**'
   workflow_dispatch:
   repository_dispatch:
     types: [rebuild-engine]
