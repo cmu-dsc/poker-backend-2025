@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "match_task" {
 }
 
 resource "aws_ecr_repository" "match_repository" {
-  name = "match-repository"
+  name = "match-repo"
   tags = var.tags
 }
 

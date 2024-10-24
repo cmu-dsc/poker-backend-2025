@@ -19,3 +19,8 @@ variable "github_access_token" {
   type        = string
   sensitive   = true
 }
+
+variable "match_repo_arn" {
+  description = "The ARN of the match repository"
+  type        = string
+}

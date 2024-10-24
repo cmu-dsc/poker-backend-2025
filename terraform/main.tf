@@ -134,4 +134,5 @@ module "artifacts" {
   tags                 = var.tags
   lambda_function_arns = [module.elo.lambda_function_arn]
   github_access_token  = var.github_access_token
+  match_repo_arn       = module.match.match_repo_arn
 }

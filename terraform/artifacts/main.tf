@@ -96,7 +96,8 @@ resource "aws_iam_role_policy" "github_actions_lambda_update" {
           "ecr:PutImage",
           "ecr:BatchGetImage"
         ]
-        Resource = [aws_ecr_repository.poker_ecr.arn]
+        Resource = [aws_ecr_repository.poker_ecr.arn,
+        var.match_repo_arn]
       }
     ]
   })
