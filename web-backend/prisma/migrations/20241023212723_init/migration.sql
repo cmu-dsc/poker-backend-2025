@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "PermissionLevel" AS ENUM ('ADMIN', 'USER');
 
+-- CreateEnum
+CREATE TYPE "MatchStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED');
+
 -- CreateTable
 CREATE TABLE "UserDao" (
     "id" SERIAL NOT NULL,
@@ -38,7 +41,7 @@ CREATE TABLE "TeamMatchDao" (
 CREATE TABLE "MatchDao" (
     "matchId" SERIAL NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "matchStatus" "MatchStatus" NOT NULL DEFAULT 'NOT_STARTED',
     "matchRequestId" INTEGER,
 
     CONSTRAINT "MatchDao_pkey" PRIMARY KEY ("matchId")
