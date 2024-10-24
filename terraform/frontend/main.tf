@@ -92,5 +92,5 @@ resource "cloudflare_record" "amplify_domain" {
     if s.prefix == "pokerai"
   ][0])[2], " ")
   type    = "CNAME"
-  proxied = false
+  proxied = true
 }
