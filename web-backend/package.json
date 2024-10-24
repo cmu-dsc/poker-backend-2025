@@ -25,6 +25,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.1",
+    "google-auth-library": "^9.14.2",
     "morgan": "^1.10.0",
     "swagger-ui-express": "^5.0.1",
     "ts-dotenv": "^0.9.1",
