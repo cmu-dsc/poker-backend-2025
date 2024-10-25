@@ -19,10 +19,11 @@ resource "aws_security_group" "pokerbots_sg" {
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    from_port = 5432
-    to_port   = 5432
-    protocol  = "tcp"
-    self      = true
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    # self      = true
   }
 
   ingress {

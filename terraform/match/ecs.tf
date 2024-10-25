@@ -32,6 +32,7 @@ resource "aws_ecs_task_definition" "match_task" {
         { name = "POKER_LOGS_BUCKET", value = var.poker_logs_bucket_id },
         { name = "SQS_QUEUE_URL", value = var.sqs_queue_url },
         { name = "APPSYNC_API_ENDPOINT", value = aws_appsync_graphql_api.match_logs_api.uris["GRAPHQL"] },
+        { name = "APPSYNC_API_KEY", value = aws_appsync_api_key.match_logs_api_key.key },
         { name = "PLAYER1_KEY", value = "#{PLAYER1_KEY}" },
         { name = "PLAYER2_KEY", value = "#{PLAYER2_KEY}" },
         { name = "PLAYER1_ID", value = "#{PLAYER1_ID}" },
